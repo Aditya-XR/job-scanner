@@ -1,0 +1,80 @@
+# Company career feeds read directly from each company's hiring system.
+# Add a company: copy a line under the right system. Remove one: delete its line.
+# Verified live on 2026-10-02.
+
+greenhouse:          # boards-api.greenhouse.io/v1/boards/<slug>/jobs
+  - {slug: okta, name: Okta}
+  - {slug: databricks, name: Databricks}
+  - {slug: mongodb, name: MongoDB}
+  - {slug: zscaler, name: Zscaler}
+  - {slug: stripe, name: Stripe}
+  - {slug: inmobi, name: InMobi}
+  - {slug: rubrik, name: Rubrik}
+  - {slug: gitlab, name: GitLab}
+  - {slug: hackerrank, name: HackerRank}
+  - {slug: elastic, name: Elastic}
+  - {slug: coinbase, name: Coinbase}
+  - {slug: druva, name: Druva}
+  - {slug: twilio, name: Twilio}
+  - {slug: agoda, name: Agoda}
+  - {slug: datadog, name: Datadog}
+  - {slug: groww, name: Groww}
+  - {slug: samsara, name: Samsara}
+  - {slug: airbnb, name: Airbnb}
+  - {slug: observeai, name: Observe.AI}
+  - {slug: figma, name: Figma}
+  - {slug: cloudflare, name: Cloudflare}
+
+lever:               # api.lever.co/v0/postings/<slug>
+  - {slug: paytm, name: Paytm}
+  - {slug: meesho, name: Meesho}
+  - {slug: zeta, name: Zeta}
+  - {slug: fampay, name: FamPay}
+  - {slug: mindtickle, name: Mindtickle}
+  - {slug: cred, name: CRED}
+  - {slug: pocketfm, name: Pocket FM}
+
+ashby:               # api.ashbyhq.com/posting-api/job-board/<slug>
+  - {slug: tekion, name: Tekion}
+  - {slug: sarvam, name: Sarvam AI}
+  - {slug: snowflake, name: Snowflake}
+  - {slug: openai, name: OpenAI}
+  - {slug: atlan, name: Atlan}
+  - {slug: notion, name: Notion}
+  - {slug: confluent, name: Confluent}
+
+smartrecruiters:     # api.smartrecruiters.com/v1/companies/<slug>/postings
+  - {slug: swiggy, name: Swiggy}
+  - {slug: servicenow, name: ServiceNow}
+  - {slug: freshworks, name: Freshworks}
+  - {slug: grab, name: Grab}
+  - {slug: unacademy, name: Unacademy}
+  - {slug: whatfix, name: Whatfix}
+  - {slug: upstox, name: Upstox}
+  - {slug: cars24, name: Cars24}
+
+workday:             # <tenant>.<wd>.myworkdayjobs.com/<site>
+  - {tenant: hpe, wd: wd5, site: Jobsathpe, name: HPE}
+  - {tenant: citi, wd: wd5, site: "2", name: Citi}
+  - {tenant: nvidia, wd: wd5, site: NVIDIAExternalCareerSite, name: NVIDIA}
+  - {tenant: kla, wd: wd1, site: Search, name: KLA}
+  - {tenant: mastercard, wd: wd1, site: CorporateCareers, name: Mastercard}
+  - {tenant: salesforce, wd: wd12, site: External_Career_Site, name: Salesforce}
+  - {tenant: micron, wd: wd1, site: External, name: Micron}
+  - {tenant: visa, wd: wd5, site: Visa, name: Visa}
+  - {tenant: adobe, wd: wd5, site: external_experienced, name: Adobe}
+  - {tenant: target, wd: wd5, site: targetcareers, name: Target}
+  - {tenant: hp, wd: wd5, site: ExternalCareerSite, name: HP}
+  - {tenant: autodesk, wd: wd1, site: Ext, name: Autodesk}
+  - {tenant: intel, wd: wd1, site: External, name: Intel}
+  - {tenant: ms, wd: wd5, site: External, name: Morgan Stanley}
+  - {tenant: cisco, wd: wd5, site: Cisco_Careers, name: Cisco}
+  - {tenant: athenahealth, wd: wd1, site: External, name: athenahealth}
+  - {tenant: lowes, wd: wd5, site: LWS_External_CS, name: "Lowe's"}
+  - {tenant: paypal, wd: wd1, site: jobs, name: PayPal}
+  - {tenant: workday, wd: wd5, site: Workday, name: Workday}
+  - {tenant: broadcom, wd: wd1, site: External_Career, name: Broadcom}
+
+custom:              # in-house job APIs, one reader each
+  - {reader: amazon, name: Amazon}
+  - {reader: microsoft, name: Microsoft}

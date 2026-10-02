@@ -1,0 +1,11 @@
+# Secrets: never commit
+.env
+secrets/
+*.json.key
+# Python
+.venv/
+__pycache__/
+*.pyc
+# Browser profiles / Playwright state
+browser-profile/
+state/

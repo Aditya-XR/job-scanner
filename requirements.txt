@@ -1,0 +1,6 @@
+requests>=2.32
+gspread>=6.1
+google-auth>=2.30
+python-dotenv>=1.0
+PyYAML>=6.0
+beautifulsoup4>=4.12
