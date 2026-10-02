@@ -125,8 +125,9 @@ Reply as JSON: {{"keep": true or false, "reason": "at most 12 words"}}"""
 class Gemini:
     def __init__(self, max_calls: int = 60):
         self.key = env("GEMINI_API_KEY")
-        # Flash-Lite: the plain Flash free tier is only 20 requests/day.
-        self.model = env("GEMINI_MODEL", "gemini-flash-lite-latest")
+        # Pinned rather than a "-latest" alias, which can silently move to a model with a
+        # smaller free quota (gemini-3.8-flash allows only 20 requests/day; this one 500).
+        self.model = env("GEMINI_MODEL", "gemini-3.5-flash-lite")
         self.calls_left = max_calls
         self._last = 0.0
 
