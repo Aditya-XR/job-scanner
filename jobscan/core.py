@@ -1,4 +1,5 @@
 """Shared pieces: settings from .env, the Job record, and an HTTP session with retries."""
+import hashlib
 import html
 import os
 import re
@@ -27,6 +28,37 @@ def today() -> date:
     return datetime.now(IST).date()
 
 
+def posting_id(system: str, scope: str, native, url: str = "", *fallback_parts) -> tuple:
+    """The identity of one posting: the hiring system's own ID, e.g.
+    "greenhouse:rubrik:8166537" or "workday:cisco:/job/Bangalore-India/Software-Engineer_2008391".
+
+    Returns (id, used_fallback). If a feed ever omits its ID we fall back to the apply link,
+    then to a hash of the visible fields. A fallback can at worst create a duplicate row;
+    it can never hide a job, and every fallback is counted in the Run log.
+    """
+    if native not in (None, ""):
+        return (f"{system}:{scope}:{native}" if scope else f"{system}:{native}"), False
+    if url:
+        return f"url:{url}", True
+    digest = hashlib.sha1("|".join(map(str, fallback_parts)).encode()).hexdigest()[:16]
+    return f"hash:{digest}", True
+
+
+def fingerprint(description: str) -> str:
+    """Identical-description check that ignores only case and whitespace (Broadcom's two copies of
+    one role differ by a few line-break spaces). Numbers are kept on purpose: "0-1 years" vs
+    "5+ years" must never look identical. Empty description -> "" (never matches anything)."""
+    text = " ".join((description or "").lower().split())
+    return hashlib.sha1(text.encode()).hexdigest()[:16] if text else ""
+
+
+def job_key(company: str, title: str) -> str:
+    """Company + title, normalized. Only used to spot the same opening on two different
+    sites (e.g. a company feed and LinkedIn), never to decide whether a posting is new."""
+    norm = lambda s: re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+    return f"{norm(company)}|{norm(title)}"
+
+
 @dataclass
 class Job:
     source: str                      # where we read it: "Greenhouse", "Workday", "LinkedIn"...
@@ -34,6 +66,9 @@ class Job:
     title: str
     location: str
     url: str                         # apply link shown in the sheet
+    job_id: str = ""                 # see posting_id()
+    id_fallback: bool = False        # True if the feed gave no ID and we had to improvise
+    group_id: str = ""               # same opening posted several times (e.g. one per city)
     posted: Optional[date] = None
     description: str = ""
     # Some feeds list jobs without the description; this fetches it only for jobs
@@ -42,12 +77,18 @@ class Job:
     experience: str = ""             # "0-1 yrs", "Not mentioned", ...
     why_kept: str = ""
     also_seen_on: list = field(default_factory=list)
+    extra_ids: list = field(default_factory=list)  # IDs of identical copies merged into this row
+    reposted: bool = False
+
+    @property
+    def all_ids(self) -> list:
+        return [self.job_id] + [i for i in self.extra_ids if i != self.job_id]
 
     def ensure_description(self) -> None:
         if not self.description and self.load_description:
             try:
                 self.description = self.load_description() or ""
-            except requests.RequestException:
+            except Exception:  # a broken detail page must not stop the run; the job is kept
                 self.description = ""
 
 

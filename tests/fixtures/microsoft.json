@@ -1,0 +1,70 @@
+{
+ "data": {
+  "count": 3,
+  "positions": [
+   {
+    "id": 1970393556991275,
+    "displayJobId": "200054191",
+    "name": "Senior Software Engineer",
+    "locations": [
+     "India, Karnataka, Bangalore"
+    ],
+    "standardizedLocations": [
+     "Bengaluru, KA, IN"
+    ],
+    "postedTs": 1789410600,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1788891541,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200054191",
+    "positionUrl": "/careers/job/1970393556991275"
+   },
+   {
+    "id": 1970393556955841,
+    "displayJobId": "200046817",
+    "name": "Principal Software Engineer",
+    "locations": [
+     "India, Telangana, Hyderabad"
+    ],
+    "standardizedLocations": [
+     "Hyderabad, TS, IN"
+    ],
+    "postedTs": 1790070490,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1785818524,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200046817",
+    "positionUrl": "/careers/job/1970393556955841"
+   },
+   {
+    "id": 1970393556958483,
+    "displayJobId": "200047576",
+    "name": "Principal Software Engineering Manager",
+    "locations": [
+     "India, Karnataka, Bangalore"
+    ],
+    "standardizedLocations": [
+     "Bengaluru, KA, IN"
+    ],
+    "postedTs": 1787205035,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1786096126,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "200047576",
+    "positionUrl": "/careers/job/1970393556958483"
+   }
+  ]
+ }
+}

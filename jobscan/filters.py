@@ -29,7 +29,7 @@ def is_india(location: str) -> bool:
 # ---------- 3. Software role (title only) ----------
 
 _SOFTWARE = re.compile(
-    r"\b(software|sde|sdet|developer|programmer|full[ -]?stack|front[ -]?end|back[ -]?end|"
+    r"\b(software|sde|sdet|developer|programmer|full[ -]?stack|(front|back)[ -]?end (engineer|developer|dev)|"
     r"android|ios|mobile engineer|devops|sre|site reliability|machine learning|ml engineer|"
     r"ai engineer|data engineer|cloud engineer|platform engineer|infrastructure engineer|"
     r"qa automation|test automation|automation engineer|application engineer|web engineer|"
@@ -38,13 +38,14 @@ _SOFTWARE = re.compile(
     re.I)
 _SENIOR = re.compile(
     r"\b(senior|sr|lead|staff|principal|manager|director|head|vp|vice president|architect|"
-    r"distinguished|fellow|ii|iii|iv|expert|specialist|leader|intermediate|experienced|mid[ -]level)\b|"
+    r"distinguished|fellow|ii|iii|iv|expert|specialist|leader|intermediate|experienced|mid[ -]level|"
+    r"dir|mgr|(engineering|engrg|engg|development|software) (mgmt|management))\b|"
     r"\b(sde|engineer|developer|mts|scientist)[\s-]*([2-9])\b|\b\d{1,2}\s*\+?\s*(years?|yrs)\b",
     re.I)
 _NOT_SOFTWARE = re.compile(
     r"\b(sales|marketing|mechanical|civil|hardware|asic|rtl|dft|analog|silicon|physical design|"
     r"layout|customer success|support engineer|technical support|recruit\w*|accountant|"
-    r"account executive|legal|finance|hr)\b", re.I)
+    r"account executive|legal|finance|hr|clerk|cashier|warehouse|driver)\b", re.I)
 ENTRY_TITLE = re.compile(r"\b(intern|internship|new grad|graduate|trainee|fresher|entry[ -]level|"
                          r"university|campus|apprentice|associate software engineer)\b", re.I)
 
@@ -62,10 +63,24 @@ _WORDS_RE = re.compile(r"\b(" + "|".join(_WORD_NUM) + r")\b(?=\s*(\(\d+\)\s*)?\+
 _YEARS = re.compile(
     r"(?<![\d.])(\d{1,2})(?:\.\d+)?(?:\s*(?:\+|plus|or more|or above))*\s*"
     r"(?:(?:-|–|—|to)\s*(\d{1,2})(?:\.\d+)?\s*\+?\s*)?(?:years?|yrs?)\b", re.I)
-_EXP_CONTEXT = re.compile(r"experience|exp\b|work(ed|ing)?\b|industry|professional|hands[- ]on", re.I)
+# Words that make "N years" a requirement rather than, say, company history. Seen in real JDs:
+# "2 to 5 years of Python engineering expertise", "5-8 years in an Apps Development role".
+_EXP_CONTEXT = re.compile(
+    r"experience|exp\b|expertise|work(ed|ing)?\b|industry|professional|hands[- ]on|\brole\b|"
+    r"development|programming|coding|engineering|software|relevant|related", re.I)
 # "Bachelors + 2 years OR Masters + 0 years": only the bachelor's figure applies to a BTech.
 _HIGHER_DEGREE = re.compile(r"(master'?s?|\bms\b|m\.?\s?tech|m\.?\s?s\.|\bme\b|ph\.?\s?d|doctora\w*)[^.;\n]{0,12}$", re.I)
 _NOT_EXP = re.compile(r"years? (old|of age)|age\b|warranty|history|anniversary|founded|since", re.I)
+# Company-history phrasing around a year count: "founded 15 years ago", "for over 20 years we have"
+_HISTORY = re.compile(r"\bago\b|founded|since \d|history|anniversary|"
+                      r"\b(we|our company|the company)\b[^.]{0,40}$", re.I)
+
+
+def _same_sentence_before(text: str, start: int, span: int = 50) -> str:
+    """Up to `span` characters before `start`, cut back to the start of that sentence/line."""
+    before = text[max(0, start - span): start]
+    cut = max(before.rfind(c) for c in ".\n;•")
+    return before[cut + 1:]
 FRESHER = re.compile(
     r"\b(freshers?|new[ -]?grad(uate)?s?|entry[ -]level|recent (college )?graduates?|"
     r"(20(25|26|27))\s*(batch|graduates?|pass[ -]?outs?|grads?)|no (prior )?(work )?experience (is )?"
@@ -73,22 +88,32 @@ FRESHER = re.compile(
 _SOFT = re.compile(r"prefer|nice[ -]to[ -]have|is a plus|good[ -]to[ -]have|bonus|desirable|ideally", re.I)
 
 
-def experience_check(title: str, description: str):
-    """Returns (decision, label, reason) where decision is 'keep', 'drop' or 'unclear'."""
-    max_min = int(env("MAX_MIN_YEARS", "0") or 0)
-    if ENTRY_TITLE.search(title):
-        return "keep", "Entry title", "title says intern/graduate/trainee"
-    text = _WORDS_RE.sub(lambda m: _WORD_NUM[m.group(1).lower()], f"{title}\n{description or ''}")
-
-    found = []  # (min_years, max_years_or_None, soft)
+def _requirements(text: str):
+    """Every 'N years' in text that reads as an experience requirement."""
+    found = []
     for m in _YEARS.finditer(text):
         lo, hi = int(m.group(1)), m.group(2)
         window = text[max(0, m.start() - 90): m.end() + 90]
         if lo > 20 or _NOT_EXP.search(text[m.start(): m.end() + 25]) or not _EXP_CONTEXT.search(window):
             continue
+        if _HISTORY.search(text[m.end(): m.end() + 15]) or _HISTORY.search(_same_sentence_before(text, m.start())):
+            continue
         if _HIGHER_DEGREE.search(text[max(0, m.start() - 30): m.start()]):
             continue
         found.append((lo, int(hi) if hi else None, bool(_SOFT.search(window))))
+    return found
+
+
+def experience_check(title: str, description: str):
+    """Returns (decision, label, reason) where decision is 'keep', 'drop' or 'unclear'."""
+    max_min = int(env("MAX_MIN_YEARS", "0") or 0)
+    if ENTRY_TITLE.search(title):
+        return "keep", "Entry title", "title says intern/graduate/trainee"
+    numbers = lambda s: _WORDS_RE.sub(lambda m: _WORD_NUM[m.group(1).lower()], s or "")
+    text = numbers(description)
+    # Title and description are scanned separately so words in the title ("Software Engineer")
+    # never count as context for a year figure in the description.
+    found = _requirements(numbers(title)) + _requirements(text)  # (min_years, max_years_or_None, soft)
     fresher = FRESHER.search(text)
 
     if not found:

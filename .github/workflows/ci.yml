@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "30 3 * * 1"   # Mondays 09:00 IST: live audit of posting IDs across every feed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest -q tests
+
+  id-audit:
+    # Reads the public company feeds (no secrets). Fails, and GitHub emails you, if any
+    # posting arrives without an ID or two different jobs share one.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m jobscan.audit

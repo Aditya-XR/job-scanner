@@ -1,0 +1,184 @@
+{
+ "jobs": [
+  {
+   "absolute_url": "https://www.rubrik.com/company/careers/departments/job.7546762?gh_jid=7546762",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": false
+    }
+   ],
+   "internal_job_id": 3340590,
+   "location": {
+    "name": "Bangalore, India"
+   },
+   "metadata": [
+    {
+     "id": 943349,
+     "name": "Geo",
+     "value": "India",
+     "value_type": "single_select"
+    },
+    {
+     "id": 681454,
+     "name": "Projected Offer Accept Date (for FP&A)",
+     "value": "10-15-26 FY27 Q3",
+     "value_type": "single_select"
+    }
+   ],
+   "id": 7546762,
+   "updated_at": "2026-10-02T14:01:47-04:00",
+   "requisition_id": "IN10460",
+   "title": "Corporate IT Architect",
+   "company_name": "Rubrik Job Board",
+   "first_published": "2026-01-27T04:48:18-05:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;h2&gt;&lt;strong&gt;About The Team:&amp;nbsp;&lt;/strong&gt;&lt;/h2&gt;\n&lt;p&gt;Come join our growing Corporate IT team to architect and scale the technology foundation that powers Dynamic Work for our employees. As a Corporate IT Architect, you will focus on designing and evolving a secure, automated, and scalable internal IT ecosystem that delivers world-class technology experiences across our workforce and workspaces.&lt;/p&gt;\n&lt;p&gt;This role centers on building resilient systems and operational maturity across Service Desk, Endpoint Engineering, Collaboration Platforms, and AV env",
+   "departments": [
+    {
+     "id": 53812,
+     "name": "Information Technology & Services",
+     "child_ids": [],
+     "parent_id": null
+    }
+   ],
+   "offices": [
+    {
+     "id": 22927,
+     "name": "Bangalore, India Office",
+     "location": "Bangalore East, Bengaluru, Karnataka, India",
+     "child_ids": [],
+     "parent_id": 63109
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": "http://app.greenhouse.io/ai_opt_out_request/job_post/7546762/ai_opt_out"
+  },
+  {
+   "absolute_url": "https://www.rubrik.com/company/careers/departments/job.8242348?gh_jid=8242348",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": false
+    }
+   ],
+   "internal_job_id": 3566373,
+   "location": {
+    "name": "Bangalore,India"
+   },
+   "metadata": [
+    {
+     "id": 943349,
+     "name": "Geo",
+     "value": "India",
+     "value_type": "single_select"
+    },
+    {
+     "id": 681454,
+     "name": "Projected Offer Accept Date (for FP&A)",
+     "value": "01-01-27 FY27 Q4",
+     "value_type": "single_select"
+    }
+   ],
+   "id": 8242348,
+   "updated_at": "2026-10-02T14:01:52-04:00",
+   "requisition_id": "INCEM11509",
+   "title": "Customer Experience Manager II",
+   "company_name": "Rubrik Job Board",
+   "first_published": "2026-09-30T23:40:18-04:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;div class=&quot;p-rich_text_section&quot; style=&quot;text-align: center;&quot;&gt;&lt;span style=&quot;text-decoration: underline;&quot;&gt;&lt;strong data-stringify-type=&quot;bold&quot;&gt;Customer Experience Manager II&lt;/strong&gt;&lt;/span&gt;&lt;/div&gt;\n&lt;div class=&quot;p-rich_text_section&quot; style=&quot;text-align: left;&quot;&gt;&amp;nbsp;&lt;/div&gt;\n&lt;div class=&quot;p-rich_text_section&quot; style=&quot;text-align: left;&quot;&gt;&lt;strong data-stringify-type=&quot;bold&quot;&gt;Location: Bangalore, India&lt;/strong&gt;&lt;br&gt;&lt;strong data-stringify-type=&quot;b",
+   "departments": [
+    {
+     "id": 9677,
+     "name": "Support",
+     "child_ids": [],
+     "parent_id": null
+    }
+   ],
+   "offices": [
+    {
+     "id": 22927,
+     "name": "Bangalore, India Office",
+     "location": "Bangalore East, Bengaluru, Karnataka, India",
+     "child_ids": [],
+     "parent_id": 63109
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": "http://app.greenhouse.io/ai_opt_out_request/job_post/8242348/ai_opt_out"
+  },
+  {
+   "absolute_url": "https://www.rubrik.com/company/careers/departments/job.8232109?gh_jid=8232109",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": false
+    }
+   ],
+   "internal_job_id": 3559842,
+   "location": {
+    "name": "Bangalore "
+   },
+   "metadata": [
+    {
+     "id": 943349,
+     "name": "Geo",
+     "value": "India",
+     "value_type": "single_select"
+    },
+    {
+     "id": 681454,
+     "name": "Projected Offer Accept Date (for FP&A)",
+     "value": "12-01-26 FY27 Q4",
+     "value_type": "single_select"
+    }
+   ],
+   "id": 8232109,
+   "updated_at": "2026-10-02T14:01:52-04:00",
+   "requisition_id": "IN11475",
+   "title": "Director, Corporate IT — Employee Experience & AI",
+   "company_name": "Rubrik Job Board",
+   "first_published": "2026-09-24T17:35:39-04:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;h1&gt;About Rubrik&lt;/h1&gt;\n&lt;p&gt;Rubrik is one of the fastest-growing companies in Silicon Valley, revolutionizing data protection, and management in the emerging multi-cloud world. We are the leader in cloud data management, delivering a single platform to manage and protect data in the cloud, at the edge, and on-premises. Enterprises choose Rubrik to simplify backup and recovery, accelerate cloud adoption, enable automation at scale, and secure against cyber threats. We’ve been recognized as a Forbes Cloud 100 Company two years in a row and as a LinkedIn Top 10 startup.&lt;/p&gt;\n&",
+   "departments": [
+    {
+     "id": 53812,
+     "name": "Information Technology & Services",
+     "child_ids": [],
+     "parent_id": null
+    }
+   ],
+   "offices": [
+    {
+     "id": 22927,
+     "name": "Bangalore, India Office",
+     "location": "Bangalore East, Bengaluru, Karnataka, India",
+     "child_ids": [],
+     "parent_id": 63109
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": "http://app.greenhouse.io/ai_opt_out_request/job_post/8232109/ai_opt_out"
+  }
+ ]
+}

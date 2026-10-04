@@ -1,0 +1,342 @@
+{
+ "offset": 0,
+ "limit": 3,
+ "totalFound": 3,
+ "content": [
+  {
+   "id": "6000000001459252",
+   "name": "Account Manager",
+   "uuid": "6f30edfa-5414-4aea-a193-e0ff0e87921e",
+   "jobAdId": "fcf11d57-66e1-4e1b-a882-b465e62ac0e1",
+   "defaultJobAd": true,
+   "refNumber": "REF775C",
+   "company": {
+    "identifier": "SWIGGY",
+    "name": "SWIGGY"
+   },
+   "releasedDate": "2026-10-03T11:08:36.851Z",
+   "location": {
+    "city": "Goa",
+    "country": "in",
+    "remote": false,
+    "hybrid": false,
+    "fullLocation": "Goa, , India"
+   },
+   "industry": {
+    "id": "it_and_services",
+    "label": "Information Technology And Services"
+   },
+   "department": {},
+   "function": {
+    "id": "sales",
+    "label": "Sales"
+   },
+   "typeOfEmployment": {
+    "id": "permanent",
+    "label": "Full-time"
+   },
+   "experienceLevel": {
+    "id": "not_applicable",
+    "label": "Not Applicable"
+   },
+   "customField": [
+    {
+     "fieldId": "6a38e3343a9cfc83b40cca20",
+     "fieldLabel": "Job Family",
+     "valueId": "21249355",
+     "valueLabel": "Sales"
+    },
+    {
+     "fieldId": "6a38e33b7b24703227946ab9",
+     "fieldLabel": "Employment Type",
+     "valueId": "6092",
+     "valueLabel": "Permanent"
+    },
+    {
+     "fieldId": "6a38e34e3a9cfc83b40cca24",
+     "fieldLabel": "Team",
+     "valueId": "1649724",
+     "valueLabel": "Supply - Retail"
+    },
+    {
+     "fieldId": "COUNTRY",
+     "fieldLabel": "Country/Region",
+     "valueId": "in",
+     "valueLabel": "India"
+    },
+    {
+     "fieldId": "6a38e3473a9cfc83b40cca22",
+     "fieldLabel": "BusinessUnit",
+     "valueId": "1536091",
+     "valueLabel": "Dine Out"
+    },
+    {
+     "fieldId": "6a33c419e54dfa765b16df1f",
+     "fieldLabel": "Brands",
+     "valueId": "default",
+     "valueLabel": "SWIGGY"
+    },
+    {
+     "fieldId": "6a38e3447b24703227946abb",
+     "fieldLabel": "LegalEntity",
+     "valueId": "1465198",
+     "valueLabel": "Swiggy Limited"
+    },
+    {
+     "fieldId": "6a38e3527b24703227946abc",
+     "fieldLabel": "Location",
+     "valueId": "1052",
+     "valueLabel": "Office - Goa"
+    },
+    {
+     "fieldId": "6a38e3417b24703227946aba",
+     "fieldLabel": "Grade",
+     "valueId": "583",
+     "valueLabel": "4"
+    },
+    {
+     "fieldId": "6a38e34a3a9cfc83b40cca23",
+     "fieldLabel": "Department.",
+     "valueId": "1645023",
+     "valueLabel": "Supply"
+    }
+   ],
+   "visibility": "PUBLIC",
+   "ref": "https://api.smartrecruiters.com/v1/companies/swiggy/postings/6000000001459252",
+   "language": {
+    "code": "en",
+    "label": "English",
+    "labelNative": "English (US)"
+   }
+  },
+  {
+   "id": "6000000001459247",
+   "name": "Key Account Manager ",
+   "uuid": "90a95ecd-087d-4765-9513-5d6b043f1b6d",
+   "jobAdId": "a547916d-7484-411d-8855-60e316011979",
+   "defaultJobAd": true,
+   "refNumber": "REF615D",
+   "company": {
+    "identifier": "SWIGGY",
+    "name": "SWIGGY"
+   },
+   "releasedDate": "2026-10-03T10:11:31.678Z",
+   "location": {
+    "city": "Vijayawada",
+    "region": "AP",
+    "country": "in",
+    "remote": false,
+    "hybrid": false,
+    "latitude": "16.5061743",
+    "longitude": "80.6480153",
+    "fullLocation": "Vijayawada, AP, India"
+   },
+   "industry": {
+    "id": "internet",
+    "label": "Internet"
+   },
+   "department": {},
+   "function": {
+    "id": "sales",
+    "label": "Sales"
+   },
+   "typeOfEmployment": {
+    "id": "permanent",
+    "label": "Full-time"
+   },
+   "experienceLevel": {
+    "id": "not_applicable",
+    "label": "Not Applicable"
+   },
+   "customField": [
+    {
+     "fieldId": "6a38e3343a9cfc83b40cca20",
+     "fieldLabel": "Job Family",
+     "valueId": "21249355",
+     "valueLabel": "Sales"
+    },
+    {
+     "fieldId": "6a38e33b7b24703227946ab9",
+     "fieldLabel": "Employment Type",
+     "valueId": "6092",
+     "valueLabel": "Permanent"
+    },
+    {
+     "fieldId": "6a38e34e3a9cfc83b40cca24",
+     "fieldLabel": "Team",
+     "valueId": "1649658",
+     "valueLabel": "Sales"
+    },
+    {
+     "fieldId": "COUNTRY",
+     "fieldLabel": "Country/Region",
+     "valueId": "in",
+     "valueLabel": "India"
+    },
+    {
+     "fieldId": "6a38e3473a9cfc83b40cca22",
+     "fieldLabel": "BusinessUnit",
+     "valueId": "1536086",
+     "valueLabel": "Food Marketplace"
+    },
+    {
+     "fieldId": "6a33c419e54dfa765b16df1f",
+     "fieldLabel": "Brands",
+     "valueId": "default",
+     "valueLabel": "SWIGGY"
+    },
+    {
+     "fieldId": "6a38e3447b24703227946abb",
+     "fieldLabel": "LegalEntity",
+     "valueId": "1465198",
+     "valueLabel": "Swiggy Limited"
+    },
+    {
+     "fieldId": "6a38e3527b24703227946abc",
+     "fieldLabel": "Location",
+     "valueId": "989",
+     "valueLabel": "Madhapur SNO"
+    },
+    {
+     "fieldId": "6a38e3417b24703227946aba",
+     "fieldLabel": "Grade",
+     "valueId": "584",
+     "valueLabel": "5"
+    },
+    {
+     "fieldId": "6a38e34a3a9cfc83b40cca23",
+     "fieldLabel": "Department.",
+     "valueId": "1643487",
+     "valueLabel": "India 1"
+    }
+   ],
+   "visibility": "PUBLIC",
+   "ref": "https://api.smartrecruiters.com/v1/companies/swiggy/postings/6000000001459247",
+   "language": {
+    "code": "en",
+    "label": "English",
+    "labelNative": "English (US)"
+   }
+  },
+  {
+   "id": "6000000001458938",
+   "name": "Principal Architect",
+   "uuid": "c7fa319e-d5b0-4625-bd7b-9c9d5f0f0445",
+   "jobAdId": "0c46abb7-ab3c-4426-9e0d-f635b4585c92",
+   "defaultJobAd": true,
+   "refNumber": "REF859B",
+   "company": {
+    "identifier": "SWIGGY",
+    "name": "SWIGGY"
+   },
+   "releasedDate": "2026-10-02T10:29:07.649Z",
+   "location": {
+    "city": "Bengaluru",
+    "region": "KA",
+    "country": "in",
+    "remote": false,
+    "hybrid": false,
+    "latitude": "12.9628957",
+    "longitude": "77.57754",
+    "fullLocation": "Bengaluru, KA, India"
+   },
+   "industry": {
+    "id": "internet",
+    "label": "Internet"
+   },
+   "department": {},
+   "function": {
+    "id": "engineering",
+    "label": "Engineering"
+   },
+   "typeOfEmployment": {
+    "id": "permanent",
+    "label": "Full-time"
+   },
+   "experienceLevel": {
+    "id": "mid_senior_level",
+    "label": "Mid-Senior Level"
+   },
+   "customField": [
+    {
+     "fieldId": "6a38e3343a9cfc83b40cca20",
+     "fieldLabel": "Job Family",
+     "valueId": "9745364",
+     "valueLabel": "Tech"
+    },
+    {
+     "fieldId": "6a38e33b7b24703227946ab9",
+     "fieldLabel": "Employment Type",
+     "valueId": "6092",
+     "valueLabel": "Permanent"
+    },
+    {
+     "fieldId": "6a38e34e3a9cfc83b40cca24",
+     "fieldLabel": "Team",
+     "valueId": "1536430",
+     "valueLabel": "Storefront"
+    },
+    {
+     "fieldId": "COUNTRY",
+     "fieldLabel": "Country/Region",
+     "valueId": "in",
+     "valueLabel": "India"
+    },
+    {
+     "fieldId": "6a38e3473a9cfc83b40cca22",
+     "fieldLabel": "BusinessUnit",
+     "valueId": "1536085",
+     "valueLabel": "Technology"
+    },
+    {
+     "fieldId": "6a38e3377b24703227946ab8",
+     "fieldLabel": "Job Code",
+     "valueId": "22431487",
+     "valueLabel": "Principal Achitect"
+    },
+    {
+     "fieldId": "6a33c419e54dfa765b16df1f",
+     "fieldLabel": "Brands",
+     "valueId": "default",
+     "valueLabel": "SWIGGY"
+    },
+    {
+     "fieldId": "6a38e3447b24703227946abb",
+     "fieldLabel": "LegalEntity",
+     "valueId": "1465198",
+     "valueLabel": "Swiggy Limited"
+    },
+    {
+     "fieldId": "6a38e3527b24703227946abc",
+     "fieldLabel": "Location",
+     "valueId": "2598",
+     "valueLabel": "Sumadhura Capitol Towers"
+    },
+    {
+     "fieldId": "6a38e3417b24703227946aba",
+     "fieldLabel": "Grade",
+     "valueId": "577",
+     "valueLabel": "11"
+    },
+    {
+     "fieldId": "6a38e34a3a9cfc83b40cca23",
+     "fieldLabel": "Department.",
+     "valueId": "1643497",
+     "valueLabel": "Engineering"
+    },
+    {
+     "fieldId": "6a462b7d3741d17b12dca696",
+     "fieldLabel": "Business",
+     "valueLabel": "Engineering"
+    }
+   ],
+   "visibility": "PUBLIC",
+   "ref": "https://api.smartrecruiters.com/v1/companies/swiggy/postings/6000000001458938",
+   "language": {
+    "code": "en",
+    "label": "English",
+    "labelNative": "English (US)"
+   }
+  }
+ ]
+}

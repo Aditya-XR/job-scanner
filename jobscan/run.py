@@ -5,21 +5,23 @@
     python -m jobscan --only meesho,nvidia
 """
 import argparse
+import hashlib
 import logging
 import time
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 import yaml
 
-from .core import IST, ROOT, env, today
+from .core import IST, ROOT, fingerprint, job_key, today
 from .filters import Gemini, experience_check, is_india, is_software
-from .sheet import Sheet, job_key
 from .sources.feeds import CUSTOM, READERS
+from .state import Tracker
 
 log = logging.getLogger("jobscan")
 MAX_AGE_DAYS = 30
-# When the same job shows up in several places, keep the link from the first source here.
+# When the same opening shows up on several sites, keep the link from the first source here.
 SOURCE_PRIORITY = ["Greenhouse", "Lever", "Ashby", "SmartRecruiters", "Workday", "Amazon Jobs",
                    "Microsoft Careers"]
 
@@ -35,29 +37,56 @@ def load_feed_tasks(only=None):
     return tasks
 
 
+def new_stats(fetched=0, error="", complete=False):
+    return {"fetched": fetched, "error": error, "complete": complete, "fallbacks": 0,
+            "conflicts": 0, "matched": 0, "kept": 0, "new": 0, "closed": 0, "copies": 0}
+
+
+def check_ids(found, st):
+    """Per-source ID self-check. A posting listed twice is kept once. Two *different* jobs
+    sharing an ID (a feed bug) are both kept under distinguishable IDs and counted, so a broken
+    feed can create a duplicate row but can never hide a job."""
+    out, first_title = [], {}
+    for j in found:
+        st["fallbacks"] += j.id_fallback
+        if j.job_id in first_title:
+            if first_title[j.job_id] == j.title:
+                continue
+            st["conflicts"] += 1
+            j.job_id = f"{j.job_id}~{hashlib.sha1(j.title.encode()).hexdigest()[:6]}"
+        first_title[j.job_id] = j.title
+        out.append(j)
+    return out
+
+
 def fetch_all(tasks):
-    """Run every reader in parallel. Returns (jobs, stats{company: {fetched, error}})."""
+    """Run every reader in parallel. Returns (jobs, stats{company: {...}})."""
     stats, jobs = {}, []
 
     def run(task):
         name, reader, cfg = task
         try:
-            return name, reader(cfg), ""
+            found, complete = reader(cfg)
+            return name, found, complete, ""
         except Exception as e:  # one broken source must not stop the others
-            return name, [], f"{type(e).__name__}: {str(e)[:150]}"
+            return name, [], False, f"{type(e).__name__}: {str(e)[:150]}"
 
     with ThreadPoolExecutor(max_workers=12) as pool:
-        for name, found, err in pool.map(run, tasks):
-            stats[name] = {"fetched": len(found), "error": err, "matched": 0, "kept": 0, "new": 0}
-            jobs.extend(found)
-            log.info("%-16s %4d jobs%s", name, len(found), f"  ERROR {err}" if err else "")
+        for name, found, complete, err in pool.map(run, tasks):
+            st = stats[name] = new_stats(len(found), err, complete and not err)
+            jobs.extend(check_ids(found, st))
+            flags = "".join([f"  ERROR {err}" if err else "", "" if st["complete"] or err else "  (partial read)",
+                             f"  {st['fallbacks']} without ID" if st["fallbacks"] else "",
+                             f"  {st['conflicts']} ID conflicts" if st["conflicts"] else ""])
+            log.info("%-16s %4d jobs%s", name, len(found), flags)
     return jobs, stats
 
 
-def select(jobs, stats, seen_keys):
-    """Apply the four checks. Returns (jobs to add newest first, keys of jobs dropped on experience)."""
+def select(jobs, stats, tracker: Tracker, gemini=None):
+    """Apply the checks to postings the sheet doesn't know yet.
+    Returns (rows to add newest first, jobs dropped on experience)."""
     cutoff = today() - timedelta(days=MAX_AGE_DAYS)
-    candidates = []
+    candidates, status_counts = [], Counter()
     for j in jobs:
         if j.posted and j.posted < cutoff:
             continue
@@ -66,22 +95,43 @@ def select(jobs, stats, seen_keys):
         if not is_software(j.title):
             continue
         stats[j.company]["matched"] += 1
-        if job_key(j.company, j.title) in seen_keys:      # check 1: already in the sheet
+        status = tracker.status_of(j.job_id)
+        status_counts[status] += 1
+        if status in ("known", "dropped"):
             continue
+        j.reposted = status == "reposted"
         candidates.append(j)
+    log.info("India + software postings: %d already in the sheet, %d judged and dropped before, "
+             "%d new, %d reposted", status_counts["known"], status_counts["dropped"],
+             status_counts["new"], status_counts["reposted"])
 
     # Load descriptions only for the survivors, in parallel.
-    log.info("%d India + software jobs not yet in the sheet; loading descriptions...", len(candidates))
     t0 = time.monotonic()
     with ThreadPoolExecutor(max_workers=12) as pool:
         list(pool.map(lambda j: j.ensure_description(), candidates))
-    log.info("Descriptions loaded in %.0fs", time.monotonic() - t0)
+    log.info("Loaded %d descriptions in %.0fs", len(candidates), time.monotonic() - t0)
 
-    gemini, kept, dropped = Gemini(), [], set()
+    # Same company + title + identical description as a row already in the sheet:
+    #  - that row still open  -> the same opening posted again (extra headcount): attach, no new row
+    #  - that row closed      -> the job was taken down and posted again: new row, marked Reposted
+    fresh = []
+    for j in candidates:
+        twin = tracker.twin_of(j, fingerprint(j.description))
+        if twin and twin.is_open and not j.reposted:
+            twin.attach(j)
+            stats[j.company]["copies"] += 1
+            log.info("  copy of open row %d: %s | %s", twin.number, j.company, j.title[:60])
+            continue
+        if twin and not twin.is_open:
+            j.reposted = True
+        fresh.append(j)
+    candidates = fresh
+
+    gemini = gemini or Gemini()
+    kept, dropped = [], []
     checked = [(j, *experience_check(j.title, j.description)) for j in candidates]
-    unclear = sum(1 for c in checked if c[1] == "unclear")
     log.info("Experience check: %d keep, %d drop, %d unclear -> Gemini",
-             sum(1 for c in checked if c[1] == "keep"), sum(1 for c in checked if c[1] == "drop"), unclear)
+             *(sum(1 for c in checked if c[1] == d) for d in ("keep", "drop", "unclear")))
     for j, decision, label, reason in checked:
         if decision == "unclear":
             verdict = gemini.classify(j.title, j.description) if gemini.available() else None
@@ -91,29 +141,61 @@ def select(jobs, stats, seen_keys):
             else:
                 decision, reason = ("keep" if verdict[0] else "drop"), f"AI: {verdict[1]}"
         if decision != "keep":
-            dropped.add(job_key(j.company, j.title))
+            dropped.append(j)
             continue
-        j.experience, j.why_kept = label, reason
+        j.experience, j.why_kept = label, ("Reposted. " if j.reposted else "") + reason
         kept.append(j)
 
-    # Merge the same job seen in several places (same company + title).
-    merged = {}
-    for j in sorted(kept, key=lambda j: SOURCE_PRIORITY.index(j.source)
-                    if j.source in SOURCE_PRIORITY else 99):
-        k = job_key(j.company, j.title)
-        if k not in merged:
-            merged[k] = j
-            continue
-        first = merged[k]
-        if j.location and j.location not in first.location:
-            first.location = f"{first.location}; {j.location}"
-        if j.source != first.source and j.source not in first.also_seen_on:
-            first.also_seen_on.append(j.source)
-    out = sorted(merged.values(), key=lambda j: (j.posted or today()), reverse=True)
-    for j in out:
+    rows = merge_copies(kept)
+    for j in rows:
         stats[j.company]["kept"] += 1
         stats[j.company]["new"] += 1
-    return out, dropped
+    return sorted(rows, key=lambda j: (j.posted or today()), reverse=True), dropped
+
+
+def merge_copies(kept):
+    """One row per opening.
+    1. Identical copies on one site (the same opening posted once per city): same Greenhouse
+       internal job, or same company + title + identical description. Merged only within a run,
+       so a repost on a later day always gets its own row.
+    2. The same opening on two different sites (company feed + a job board): same company +
+       title, only ever across sources, never two postings from the same site."""
+    def copy_key(j):
+        if j.group_id:
+            return ("group", j.group_id)
+        fp = fingerprint(j.description)
+        if not fp:
+            return ("id", j.job_id)   # nothing to compare: never merge on an empty description
+        return ("desc", j.source, job_key(j.company, j.title), fp)
+
+    by_copy, rows = {}, []
+    for j in kept:
+        k = copy_key(j)
+        if k in by_copy:
+            _absorb(by_copy[k], j)
+        else:
+            by_copy[k] = j
+            rows.append(j)
+
+    by_title, out = defaultdict(list), []
+    for j in sorted(rows, key=lambda j: SOURCE_PRIORITY.index(j.source) if j.source in SOURCE_PRIORITY else 99):
+        k = job_key(j.company, j.title)
+        other = next((r for r in by_title[k] if r.source != j.source and j.source not in r.also_seen_on), None)
+        if other:
+            _absorb(other, j)
+            other.also_seen_on.append(j.source)
+        else:
+            by_title[k].append(j)
+            out.append(j)
+    return out
+
+
+def _absorb(row, copy):
+    for place in (copy.location or "").split("; "):
+        if place and place not in row.location:
+            row.location = f"{row.location}; {place}" if row.location else place
+    row.extra_ids += [i for i in copy.all_ids if i not in row.all_ids]
+    row.reposted = row.reposted or copy.reposted
 
 
 def main(argv=None):
@@ -130,28 +212,49 @@ def main(argv=None):
     log.info("Reading %d company feeds...", len(tasks))
     jobs, stats = fetch_all(tasks)
 
-    sheet = None if args.dry_run else Sheet()
-    seen = sheet.recent_keys() if sheet else set()
-    new, dropped = select(jobs, stats, seen)
+    sheet = None
+    if args.dry_run:
+        tracker = Tracker([], [], today())
+    else:
+        from .sheet import Sheet
+        sheet = Sheet()
+        action = sheet.prepare(jobs)
+        if action != "ok":
+            log.info("Sheet layout: %s", action)
+        tracker = sheet.tracker()
 
-    total_matched = sum(s["matched"] for s in stats.values())
-    log.info("\n%d jobs fetched, %d India + software, %d new and passing the experience check",
-             len(jobs), total_matched, len(new))
+    new, dropped = select(jobs, stats, tracker)
+    log.info("\n%d jobs fetched, %d India + software, %d new rows",
+             len(jobs), sum(s["matched"] for s in stats.values()), len(new))
     if args.dry_run:
         for j in new:
             log.info("  %-14s | %-50s | %-13s | %s", j.company[:14], j.title[:50], j.experience, j.why_kept)
         return
 
+    # With --only, companies outside the selection weren't read: they must not be closed.
+    complete = {n for n, s in stats.items() if s["complete"]}
+    reposted_ids = {i for j in new if j.reposted for i in j.all_ids}
+    closed = tracker.refresh({j.job_id for j in jobs}, complete, reposted_ids)
+    for r in closed:
+        stats[r.company]["closed"] += 1
+    changed = sheet.write_statuses(tracker)      # before inserting rows, which shifts row numbers
     sheet.add_jobs(new)
     sheet.add_seen(dropped)
+    copies = sum(s["copies"] for s in stats.values())
+    log.info("Status changes on existing rows: %d (closed today: %d); identical postings attached "
+             "to existing rows: %d", changed, len(closed), copies)
+
     run_at = datetime.now(IST).strftime("%Y-%m-%d %H:%M")
     broken_before = sheet.previous_zero_sources(args.group)
-    sheet.add_log([[run_at, args.group, name, s["fetched"], s["matched"], s["kept"], s["new"], s["error"]]
+    sheet.add_log([[run_at, args.group, name, s["fetched"], s["matched"], s["kept"], s["new"], s["error"],
+                    "yes" if s["complete"] else "no", s["fallbacks"], s["conflicts"], s["closed"]]
                    for name, s in sorted(stats.items())])
     broken_now = {n for n, s in stats.items() if s["fetched"] == 0 or s["error"]}
+    id_problems = {n: (s["fallbacks"], s["conflicts"]) for n, s in stats.items() if s["fallbacks"] or s["conflicts"]}
     if not args.no_email:
         from .notify import send_summary
-        sent = send_summary(args.group, new, sheet.url, broken_now & broken_before)
+        sent = send_summary(args.group, new, sheet.url, broken_now & broken_before,
+                            closed_rows=closed, id_problems=id_problems, copies=copies)
         log.info("Summary email %s", "sent" if sent else "skipped (Gmail not configured)")
     log.info("Done: %d new rows in %s", len(new), sheet.url)
 

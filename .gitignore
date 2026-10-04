@@ -9,3 +9,6 @@ __pycache__/
 # Browser profiles / Playwright state
 browser-profile/
 state/
+
+# Local sheet snapshots
+backups/

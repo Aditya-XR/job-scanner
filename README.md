@@ -20,12 +20,38 @@ guarded job boards ───┘                                                 
 
 ## How a job is kept
 
-1. **New:** same company + title not added in the last 30 days (also merges duplicates across sources).
+1. **New:** every posting is identified by its hiring system's own ID (Greenhouse/Lever/Ashby/
+   SmartRecruiters ID, Workday posting path, Amazon/Microsoft job ID), never by its title. Two
+   openings that share a title are separate rows, and a job that is taken down and posted again
+   gets a new ID, so it shows up again.
 2. **India or remote-India:** location names an Indian city, India, or remote APAC.
 3. **Software role:** title matches software keywords; senior/lead/staff/II/III titles are dropped.
 4. **Under 1 year of experience:** the smallest "X years" requirement in the description is 0, or
    none is stated, or the title is intern/graduate/trainee. Mixed signals ("freshers welcome, 2+ years
    preferred") go to Gemini 3.5 Flash-Lite for a keep/drop call. Set `MAX_MIN_YEARS=1` to also keep "1+ years".
+
+The same opening posted once per city in one run becomes one row listing every city. A job
+judged and dropped is remembered (hidden **Seen** tab) so it isn't re-checked daily.
+
+## Open? column
+
+| Value | Meaning |
+|---|---|
+| `Open` | still listed in the company's feed today |
+| `Closed 2026-10-05` | missing from a complete read of the feed on that date (row greyed out) |
+| `Closed (reposted 2026-10-07)` | the same posting came back after 2+ days; a fresh row was added on top |
+
+A job is only marked closed when its company's feed was read in full without errors, so a
+failed or partial read never closes anything. A job gone for a single day is treated as a feed
+glitch and reopened.
+
+## Safety checks
+
+- Each run counts postings without an ID and IDs shared by two different jobs, per company,
+  in the Run log. Either one triggers the Gmail alert. A missing ID falls back to the apply
+  link, so the worst case is a duplicate row, never a hidden job.
+- `pytest` runs on every push (recorded responses from all 7 hiring systems).
+- Every Monday, GitHub Actions runs `python -m jobscan.audit`, a live check of every feed's IDs.
 
 ## Setup
 
@@ -45,6 +71,8 @@ shared with it as Editor, a Gemini API key, and a Gmail app password. See `.env.
 python -m jobscan --dry-run          # print what would be added
 python -m jobscan                    # update the sheet and send the email
 python -m jobscan --only meesho,nvidia --dry-run
+python -m jobscan.audit              # live check that every posting has a unique ID
+pytest -q tests                      # needs: pip install -r requirements-dev.txt
 ```
 
 ## Adding a company
