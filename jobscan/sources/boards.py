@@ -344,3 +344,6 @@ def _keeping(head, load):
 
 
 BOARDS = {"Unstop": unstop, "Internshala": internshala, "Hirist": hirist, "Cutshort": cutshort, "Foundit": foundit}
+# Answer 403 to GitHub's servers (bot protection that blocks datacenter IPs), so they are read
+# from the laptop instead: the "laptop" run group.
+HOME_IP_ONLY = {"Foundit"}

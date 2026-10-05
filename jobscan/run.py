@@ -1,7 +1,8 @@
 """Entry point.
 
     python -m jobscan                     # company feeds + open job boards -> sheet -> email
-    python -m jobscan --group boards      # only the job boards (or: --group feeds)
+    python -m jobscan --group laptop      # boards that block GitHub's servers (Foundit)
+    python -m jobscan --group boards      # every job board (or: --group feeds)
     python -m jobscan --dry-run           # print what would be added; no sheet, no email
     python -m jobscan --only meesho,nvidia,unstop
 """
@@ -17,29 +18,34 @@ import yaml
 
 from .core import IST, ROOT, fingerprint, job_key, today
 from .filters import Gemini, experience_check, is_india, is_software
-from .sources.boards import BOARDS
+from .sources.boards import BOARDS, HOME_IP_ONLY
 from .sources.feeds import CUSTOM, READERS
 from .state import Tracker
 
 log = logging.getLogger("jobscan")
 MAX_AGE_DAYS = 30
-# "cloud" is everything that needs no login or browser: what GitHub Actions runs every morning.
-GROUPS = {"cloud": ("feeds", "boards"), "feeds": ("feeds",), "boards": ("boards",)}
+GROUPS = {
+    "cloud": ("feeds", "boards"),         # GitHub Actions every morning: needs no login, browser or home IP
+    "laptop": ("home-IP boards",),        # boards that block GitHub's servers: run from your laptop
+    "feeds": ("feeds",),
+    "boards": ("boards", "home-IP boards"),
+}
 
 
 def load_tasks(group="cloud", only=None):
     """(Run log name, reader, config) for every company feed and/or job board in the group."""
-    tasks = []
-    if "feeds" in GROUPS[group]:
+    tasks, parts = [], GROUPS[group]
+    if "feeds" in parts:
         cfg = yaml.safe_load((ROOT / "companies.yaml").read_text(encoding="utf-8"))
         for system, entries in cfg.items():
             for c in entries or []:
                 reader = READERS.get(system) or CUSTOM.get(c.get("reader", ""))
                 if reader and (not only or c["name"].lower() in only or c.get("slug", c.get("tenant", "")) in only):
                     tasks.append((c["name"], reader, c))
-    if "boards" in GROUPS[group]:
-        tasks += [(name, reader, {"name": name}) for name, reader in BOARDS.items()
-                  if not only or name.lower() in only]
+    for name, reader in BOARDS.items():
+        wanted = "home-IP boards" if name in HOME_IP_ONLY else "boards"
+        if wanted in parts and (not only or name.lower() in only):
+            tasks.append((name, reader, {"name": name}))
     return tasks
 
 
@@ -217,7 +223,8 @@ def _absorb(row, copy):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="jobscan")
     ap.add_argument("--group", default="cloud", choices=list(GROUPS),
-                    help="cloud = company feeds + job boards (default); feeds; boards")
+                    help="cloud = company feeds + job boards (default, GitHub Actions); laptop = boards "
+                         "that block GitHub's servers; feeds; boards")
     ap.add_argument("--dry-run", action="store_true", help="print results; don't touch the sheet or email")
     ap.add_argument("--no-email", action="store_true")
     ap.add_argument("--only", help="comma-separated company names/slugs or board names, for testing")

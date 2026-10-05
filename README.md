@@ -15,12 +15,14 @@ guarded job boards ───┘                                                 
 | Group | Sources | Status |
 |---|---|---|
 | Company career feeds | 73 companies through Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Eightfold, Jibe, Radancy and Oracle career sites, plus Amazon's and Goldman Sachs' own APIs (see [`companies.yaml`](companies.yaml)) | ✅ daily |
-| Open job boards | Unstop, Internshala, Hirist, Cutshort, Foundit (see [`boards.py`](jobscan/sources/boards.py)) | ✅ daily |
+| Open job boards | Unstop, Internshala, Hirist, Cutshort (see [`boards.py`](jobscan/sources/boards.py)) | ✅ daily |
+| Open job boards that block GitHub's servers | Foundit (`python -m jobscan --group laptop`) | ✅ from your laptop |
 | Guarded job boards | LinkedIn, Naukri, Indeed, Wellfound, Instahyre (run from a laptop with a real browser) | planned |
 
 Every morning at about 07:30 IST, GitHub Actions ([`daily.yml`](.github/workflows/daily.yml)) reads
 the company feeds and the open job boards, updates the sheet and sends the Gmail summary. Your
-laptop doesn't need to be on.
+laptop doesn't need to be on. Foundit's bot protection answers 403 to GitHub's servers, so it is
+read from your laptop (`--group laptop`), like the guarded boards will be.
 
 ### What each job board is asked for
 
@@ -30,7 +32,7 @@ laptop doesn't need to be on.
 | Internshala | the whole fresher-jobs listing for computer-science categories | yes |
 | Hirist | every job in the software categories with a 0-1 year range | yes |
 | Cutshort | every posting from the last 10 days with a minimum of 0-1 years | no (window) |
-| Foundit | software/developer searches, 0-1 years, posted in the last 2 days | no (window) |
+| Foundit (laptop) | software/developer searches, 0-1 years, posted in the last 2 days | no (window) |
 
 A board's own experience range is written at the top of the description, where the normal
 experience check reads it. Boards re-list jobs from company sites under their own IDs, so a
@@ -92,7 +94,8 @@ shared with it as Editor, a Gemini API key, and a Gmail app password. See `.env.
 ```bash
 python -m jobscan --dry-run          # print what would be added
 python -m jobscan                    # update the sheet and send the email
-python -m jobscan --group boards     # only the job boards (--group feeds: only company sites)
+python -m jobscan --group laptop     # boards that block GitHub's servers (Foundit)
+python -m jobscan --group boards     # every job board (--group feeds: only company sites)
 python -m jobscan --only meesho,nvidia,unstop --dry-run
 python -m jobscan.audit              # live check that every posting has a unique ID
 pytest -q tests                      # needs: pip install -r requirements-dev.txt

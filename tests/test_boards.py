@@ -122,6 +122,16 @@ def test_cutshort_keeps_0_1_year_minimums_and_stops_at_the_last_page(monkeypatch
     assert [experience_check("Software Engineer", j.description)[0] for j in jobs] == ["keep", "keep"]
 
 
+def test_run_groups():
+    """Foundit answers 403 to GitHub's servers, so it runs from the laptop, not in the cloud run."""
+    from jobscan.run import load_tasks
+    names = lambda group: {name for name, _, _ in load_tasks(group)}
+    assert {"Unstop", "Internshala", "Hirist", "Cutshort", "Walmart", "Goldman Sachs"} <= names("cloud")
+    assert "Foundit" not in names("cloud")
+    assert names("laptop") == {"Foundit"}
+    assert names("boards") == set(boards.BOARDS)
+
+
 @pytest.mark.parametrize("names,expected", [
     (["Bangalore"], "Bangalore"),
     (["Bhopal"], "Bhopal, India"),                   # an Indian city missing from INDIA_PLACES
