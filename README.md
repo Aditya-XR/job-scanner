@@ -14,9 +14,29 @@ guarded job boards ───┘                                                 
 
 | Group | Sources | Status |
 |---|---|---|
-| Company career feeds | 65 companies through Greenhouse, Lever, Ashby, SmartRecruiters, Workday, plus Amazon and Microsoft's own APIs (see [`companies.yaml`](companies.yaml)) | ✅ |
-| Open job boards | Unstop, Internshala, Cutshort, Foundit, Hirist | planned |
+| Company career feeds | 73 companies through Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Eightfold, Jibe, Radancy and Oracle career sites, plus Amazon's and Goldman Sachs' own APIs (see [`companies.yaml`](companies.yaml)) | ✅ daily |
+| Open job boards | Unstop, Internshala, Hirist, Cutshort, Foundit (see [`boards.py`](jobscan/sources/boards.py)) | ✅ daily |
 | Guarded job boards | LinkedIn, Naukri, Indeed, Wellfound, Instahyre (run from a laptop with a real browser) | planned |
+
+Every morning at about 07:30 IST, GitHub Actions ([`daily.yml`](.github/workflows/daily.yml)) reads
+the company feeds and the open job boards, updates the sheet and sends the Gmail summary. Your
+laptop doesn't need to be on.
+
+### What each job board is asked for
+
+| Board | What is read | Can close rows? |
+|---|---|---|
+| Unstop | every open job tagged for freshers in tech roles | yes |
+| Internshala | the whole fresher-jobs listing for computer-science categories | yes |
+| Hirist | every job in the software categories with a 0-1 year range | yes |
+| Cutshort | every posting from the last 10 days with a minimum of 0-1 years | no (window) |
+| Foundit | software/developer searches, 0-1 years, posted in the last 2 days | no (window) |
+
+A board's own experience range is written at the top of the description, where the normal
+experience check reads it. Boards re-list jobs from company sites under their own IDs, so a
+board posting with the same company and title as an open row from another site is added to
+that row's **Also seen on** instead of becoming a new row. A company's own posting is never
+matched this way: it always gets its own row.
 
 ## How a job is kept
 
@@ -41,17 +61,19 @@ judged and dropped is remembered (hidden **Seen** tab) so it isn't re-checked da
 | `Closed 2026-10-05` | missing from a complete read of the feed on that date (row greyed out) |
 | `Closed (reposted 2026-10-07)` | the same posting came back after 2+ days; a fresh row was added on top |
 
-A job is only marked closed when its company's feed was read in full without errors, so a
-failed or partial read never closes anything. A job gone for a single day is treated as a feed
-glitch and reopened.
+A job is only marked closed when its company's feed (or, for a row first found on a job board,
+that board) was read in full without errors, so a failed or partial read never closes anything.
+A job board that still lists a job the company has taken down doesn't keep it open. A job gone
+for a single day is treated as a feed glitch and reopened.
 
 ## Safety checks
 
-- Each run counts postings without an ID and IDs shared by two different jobs, per company,
+- Each run counts postings without an ID and IDs shared by two different jobs, per source,
   in the Run log. Either one triggers the Gmail alert. A missing ID falls back to the apply
   link, so the worst case is a duplicate row, never a hidden job.
-- `pytest` runs on every push (recorded responses from all 7 hiring systems).
-- Every Monday, GitHub Actions runs `python -m jobscan.audit`, a live check of every feed's IDs.
+- A source that returns no jobs or fails on two runs in a row is listed in the Gmail summary.
+- `pytest` runs on every push (recorded responses from every hiring system and job board).
+- Every Monday, GitHub Actions runs `python -m jobscan.audit`, a live check of every source's IDs.
 
 ## Setup
 
@@ -70,7 +92,8 @@ shared with it as Editor, a Gemini API key, and a Gmail app password. See `.env.
 ```bash
 python -m jobscan --dry-run          # print what would be added
 python -m jobscan                    # update the sheet and send the email
-python -m jobscan --only meesho,nvidia --dry-run
+python -m jobscan --group boards     # only the job boards (--group feeds: only company sites)
+python -m jobscan --only meesho,nvidia,unstop --dry-run
 python -m jobscan.audit              # live check that every posting has a unique ID
 pytest -q tests                      # needs: pip install -r requirements-dev.txt
 ```
@@ -80,9 +103,13 @@ pytest -q tests                      # needs: pip install -r requirements-dev.tx
 Find which hiring system its careers page uses (the apply links usually show it:
 `boards.greenhouse.io/<slug>`, `jobs.lever.co/<slug>`, `jobs.ashbyhq.com/<slug>`,
 `jobs.smartrecruiters.com/<slug>`, `<tenant>.wd5.myworkdayjobs.com/<site>`), then add one line
-under that system in `companies.yaml`.
+under that system in `companies.yaml`. Workday tenants live on different hosts (`wd1`, `wd5`,
+`wd12`, `wd504`...): copy it from a job link.
 
 ## Secrets
 
 `.env` and `secrets/` are git-ignored. In GitHub Actions the same values come from repository
-secrets. Logs only contain counts, never credentials.
+secrets: `GOOGLE_SERVICE_ACCOUNT_JSON` (the key file's contents), `SHEET_ID`, `GEMINI_API_KEY`,
+`GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` and `ALERT_TO`; `MAX_MIN_YEARS` and `GEMINI_MODEL` are
+optional repository variables. The daily workflow only runs on its schedule or by hand, never
+for pull requests, so forks can't reach the secrets. Logs only contain counts, never credentials.

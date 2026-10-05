@@ -1,0 +1,59 @@
+name: daily scan
+
+on:
+  schedule:
+    # 07:20 IST. GitHub often starts scheduled runs 5-30 minutes late, more so on the hour.
+    - cron: "50 1 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: read every source and print what would be added (no sheet, no email)"
+        type: boolean
+        default: false
+      only:
+        description: "Optional: comma-separated companies or boards, e.g. unstop,foundit"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# The sheet has one writer at a time (a later laptop run for LinkedIn etc. joins this group).
+concurrency:
+  group: jobscan-sheet
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Write the service-account key
+        if: ${{ !inputs.dry_run }}
+        env:
+          KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          test -n "$KEY" || { echo "::error::Repository secret GOOGLE_SERVICE_ACCOUNT_JSON is not set"; exit 1; }
+          mkdir -p secrets
+          printf '%s' "$KEY" > secrets/service_account.json
+
+      - name: Scan company feeds and job boards
+        env:
+          GOOGLE_SERVICE_ACCOUNT_FILE: secrets/service_account.json
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          MAX_MIN_YEARS: ${{ vars.MAX_MIN_YEARS }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+          ONLY: ${{ inputs.only }}
+        run: python -m jobscan $DRY_RUN ${ONLY:+--only "$ONLY"}

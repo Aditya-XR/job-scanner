@@ -6,6 +6,7 @@ from datetime import timedelta
 import gspread
 
 from .core import ROOT, env, fingerprint, posting_id, today
+from .sources.boards import BOARDS
 from .state import Row, Tracker
 
 HEADERS = ["Found on", "Company", "Title", "Location", "Posted", "Experience", "Why kept",
@@ -204,9 +205,12 @@ class Sheet:
             r = r + [""] * (len(HEADERS) - len(r))
             if not r[COL["Job ID"]]:
                 continue  # a row you typed in yourself: leave it alone
+            source = r[COL["Source"]]
             rows.append(Row(number=n, ids=r[COL["Job ID"]].split(ID_SEP), company=r[COL["Company"]],
                             status=r[COL["Open?"]], title=r[COL["Title"]], user_status=r[COL["Status"]],
-                            fingerprint=r[COL["Fingerprint"]], location=r[COL["Location"]]))
+                            fingerprint=r[COL["Fingerprint"]], location=r[COL["Location"]], source=source,
+                            feed=source if source in BOARDS else r[COL["Company"]],
+                            also_seen_on=r[COL["Also seen on"]]))
         dropped = [r[0] for r in self.seen.get_values("A2:A") if r]
         return Tracker(rows, dropped, today())
 
@@ -226,9 +230,10 @@ class Sheet:
         changes = [{"range": f"{c}{r.number}", "values": [[r.new_status]]}
                    for r in tracker.rows if r.new_status is not None and r.new_status != r.status]
         for r in tracker.rows:
-            if r.added:   # identical postings of an opening already in the sheet
+            if r.added:   # postings of an opening already in the sheet: identical copies, or job boards
                 changes.append({"range": f"{_col(COL['Job ID'])}{r.number}", "values": [[ID_SEP.join(r.all_ids)]]})
                 changes.append({"range": f"{_col(COL['Location'])}{r.number}", "values": [[_safe(r.location)]]})
+                changes.append({"range": f"{_col(COL['Also seen on'])}{r.number}", "values": [[_safe(r.also_seen_on)]]})
         if changes:
             self.jobs.batch_update(changes, value_input_option="RAW")
         return sum(1 for r in tracker.rows if r.new_status is not None and r.new_status != r.status)
@@ -255,14 +260,13 @@ class Sheet:
         if rows:
             self.log.append_rows(rows, value_input_option="USER_ENTERED")
 
-    def previous_zero_sources(self, group: str) -> set:
-        """Sources that fetched 0 jobs (or errored) on the previous run of this group."""
-        rows = self.log.get_values("A2:H")
-        runs = [r for r in rows if len(r) > 3 and r[1] == group]
-        if not runs:
-            return set()
-        last_run = runs[-1][0]
-        return {r[2] for r in runs if r[0] == last_run and (r[3] in ("0", "") or (len(r) > 7 and r[7]))}
+    def previous_zero_sources(self) -> set:
+        """Sources that fetched 0 jobs (or errored) the last time they were read, in any run group."""
+        last = {}
+        for r in self.log.get_values("A2:H"):
+            if len(r) > 3:
+                last[r[2]] = r    # the log is in run order: later rows win
+        return {name for name, r in last.items() if r[3] in ("0", "") or (len(r) > 7 and r[7])}
 
 
 def _fingerprints(jobs):

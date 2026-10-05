@@ -23,11 +23,11 @@ def send_summary(group: str, new_jobs, sheet_url: str, broken_sources,
     rows = "".join(
         f"<tr><td>{E(j.company)}</td><td><a href=\"{E(j.url)}\">{E(j.title)}</a>"
         f"{' <b>(reposted)</b>' if j.reposted else ''}</td>"
-        f"<td>{E(j.location)}</td><td>{E(j.experience)}</td></tr>"
+        f"<td>{E(j.location)}</td><td>{E(j.experience)}</td><td>{E(j.source)}</td></tr>"
         for j in new_jobs[:40])
     more = f"<p>…and {len(new_jobs) - 40} more in the sheet.</p>" if len(new_jobs) > 40 else ""
     table = (f"<table cellpadding='6' style='border-collapse:collapse' border='1'>"
-             f"<tr><th>Company</th><th>Role</th><th>Location</th><th>Experience</th></tr>{rows}</table>{more}"
+             f"<tr><th>Company</th><th>Role</th><th>Location</th><th>Experience</th><th>Found on</th></tr>{rows}</table>{more}"
              if new_jobs else "<p>No new matching jobs this run.</p>")
 
     closed = ""

@@ -1,8 +1,9 @@
 """Entry point.
 
-    python -m jobscan                     # company feeds -> sheet -> email
+    python -m jobscan                     # company feeds + open job boards -> sheet -> email
+    python -m jobscan --group boards      # only the job boards (or: --group feeds)
     python -m jobscan --dry-run           # print what would be added; no sheet, no email
-    python -m jobscan --only meesho,nvidia
+    python -m jobscan --only meesho,nvidia,unstop
 """
 import argparse
 import hashlib
@@ -16,30 +17,35 @@ import yaml
 
 from .core import IST, ROOT, fingerprint, job_key, today
 from .filters import Gemini, experience_check, is_india, is_software
+from .sources.boards import BOARDS
 from .sources.feeds import CUSTOM, READERS
 from .state import Tracker
 
 log = logging.getLogger("jobscan")
 MAX_AGE_DAYS = 30
-# When the same opening shows up on several sites, keep the link from the first source here.
-SOURCE_PRIORITY = ["Greenhouse", "Lever", "Ashby", "SmartRecruiters", "Workday", "Amazon Jobs",
-                   "Microsoft Careers"]
+# "cloud" is everything that needs no login or browser: what GitHub Actions runs every morning.
+GROUPS = {"cloud": ("feeds", "boards"), "feeds": ("feeds",), "boards": ("boards",)}
 
 
-def load_feed_tasks(only=None):
-    cfg = yaml.safe_load((ROOT / "companies.yaml").read_text(encoding="utf-8"))
+def load_tasks(group="cloud", only=None):
+    """(Run log name, reader, config) for every company feed and/or job board in the group."""
     tasks = []
-    for system, entries in cfg.items():
-        for c in entries or []:
-            reader = READERS.get(system) or CUSTOM.get(c.get("reader", ""))
-            if reader and (not only or c["name"].lower() in only or c.get("slug", c.get("tenant", "")) in only):
-                tasks.append((c["name"], reader, c))
+    if "feeds" in GROUPS[group]:
+        cfg = yaml.safe_load((ROOT / "companies.yaml").read_text(encoding="utf-8"))
+        for system, entries in cfg.items():
+            for c in entries or []:
+                reader = READERS.get(system) or CUSTOM.get(c.get("reader", ""))
+                if reader and (not only or c["name"].lower() in only or c.get("slug", c.get("tenant", "")) in only):
+                    tasks.append((c["name"], reader, c))
+    if "boards" in GROUPS[group]:
+        tasks += [(name, reader, {"name": name}) for name, reader in BOARDS.items()
+                  if not only or name.lower() in only]
     return tasks
 
 
 def new_stats(fetched=0, error="", complete=False):
-    return {"fetched": fetched, "error": error, "complete": complete, "fallbacks": 0,
-            "conflicts": 0, "matched": 0, "kept": 0, "new": 0, "closed": 0, "copies": 0}
+    return {"fetched": fetched, "error": error, "complete": complete, "fallbacks": 0, "conflicts": 0,
+            "matched": 0, "kept": 0, "new": 0, "closed": 0, "copies": 0, "elsewhere": 0}
 
 
 def check_ids(found, st):
@@ -73,6 +79,8 @@ def fetch_all(tasks):
 
     with ThreadPoolExecutor(max_workers=12) as pool:
         for name, found, complete, err in pool.map(run, tasks):
+            for j in found:
+                j.feed = name
             st = stats[name] = new_stats(len(found), err, complete and not err)
             jobs.extend(check_ids(found, st))
             flags = "".join([f"  ERROR {err}" if err else "", "" if st["complete"] or err else "  (partial read)",
@@ -94,16 +102,22 @@ def select(jobs, stats, tracker: Tracker, gemini=None):
             continue
         if not is_software(j.title):
             continue
-        stats[j.company]["matched"] += 1
+        stats[j.feed]["matched"] += 1
         status = tracker.status_of(j.job_id)
+        if status == "new" and j.feed in BOARDS:
+            row = tracker.other_site_match(j)
+            if row:   # a job board listing an opening the sheet already has from another site
+                row.attach_from_other_site(j)
+                stats[j.feed]["elsewhere"] += 1
+                status = "elsewhere"
         status_counts[status] += 1
-        if status in ("known", "dropped"):
+        if status in ("known", "dropped", "elsewhere"):
             continue
         j.reposted = status == "reposted"
         candidates.append(j)
     log.info("India + software postings: %d already in the sheet, %d judged and dropped before, "
-             "%d new, %d reposted", status_counts["known"], status_counts["dropped"],
-             status_counts["new"], status_counts["reposted"])
+             "%d already in the sheet from another site, %d new, %d reposted", status_counts["known"],
+             status_counts["dropped"], status_counts["elsewhere"], status_counts["new"], status_counts["reposted"])
 
     # Load descriptions only for the survivors, in parallel.
     t0 = time.monotonic()
@@ -119,7 +133,7 @@ def select(jobs, stats, tracker: Tracker, gemini=None):
         twin = tracker.twin_of(j, fingerprint(j.description))
         if twin and twin.is_open and not j.reposted:
             twin.attach(j)
-            stats[j.company]["copies"] += 1
+            stats[j.feed]["copies"] += 1
             log.info("  copy of open row %d: %s | %s", twin.number, j.company, j.title[:60])
             continue
         if twin and not twin.is_open:
@@ -148,8 +162,8 @@ def select(jobs, stats, tracker: Tracker, gemini=None):
 
     rows = merge_copies(kept)
     for j in rows:
-        stats[j.company]["kept"] += 1
-        stats[j.company]["new"] += 1
+        stats[j.feed]["kept"] += 1
+        stats[j.feed]["new"] += 1
     return sorted(rows, key=lambda j: (j.posted or today()), reverse=True), dropped
 
 
@@ -177,8 +191,10 @@ def merge_copies(kept):
             by_copy[k] = j
             rows.append(j)
 
+    # The company's own posting comes first, so its link is the one kept.
+    board_rank = lambda j: list(BOARDS).index(j.feed) + 1 if j.feed in BOARDS else 0
     by_title, out = defaultdict(list), []
-    for j in sorted(rows, key=lambda j: SOURCE_PRIORITY.index(j.source) if j.source in SOURCE_PRIORITY else 99):
+    for j in sorted(rows, key=board_rank):
         k = job_key(j.company, j.title)
         other = next((r for r in by_title[k] if r.source != j.source and j.source not in r.also_seen_on), None)
         if other:
@@ -200,16 +216,17 @@ def _absorb(row, copy):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="jobscan")
-    ap.add_argument("--group", default="feeds", choices=["feeds"])
+    ap.add_argument("--group", default="cloud", choices=list(GROUPS),
+                    help="cloud = company feeds + job boards (default); feeds; boards")
     ap.add_argument("--dry-run", action="store_true", help="print results; don't touch the sheet or email")
     ap.add_argument("--no-email", action="store_true")
-    ap.add_argument("--only", help="comma-separated company names/slugs, for testing")
+    ap.add_argument("--only", help="comma-separated company names/slugs or board names, for testing")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     only = {s.strip().lower() for s in args.only.split(",")} if args.only else None
-    tasks = load_feed_tasks(only)
-    log.info("Reading %d company feeds...", len(tasks))
+    tasks = load_tasks(args.group, only)
+    log.info("Reading %d sources...", len(tasks))
     jobs, stats = fetch_all(tasks)
 
     sheet = None
@@ -228,24 +245,27 @@ def main(argv=None):
              len(jobs), sum(s["matched"] for s in stats.values()), len(new))
     if args.dry_run:
         for j in new:
-            log.info("  %-14s | %-50s | %-13s | %s", j.company[:14], j.title[:50], j.experience, j.why_kept)
+            log.info("  %-11s | %-14s | %-50s | %-13s | %s", j.source[:11], j.company[:14], j.title[:50],
+                     j.experience, j.why_kept)
         return
 
-    # With --only, companies outside the selection weren't read: they must not be closed.
+    # With --only, sources outside the selection weren't read: their rows must not be closed.
     complete = {n for n, s in stats.items() if s["complete"]}
     reposted_ids = {i for j in new if j.reposted for i in j.all_ids}
     closed = tracker.refresh({j.job_id for j in jobs}, complete, reposted_ids)
     for r in closed:
-        stats[r.company]["closed"] += 1
+        stats[r.feed]["closed"] += 1
     changed = sheet.write_statuses(tracker)      # before inserting rows, which shifts row numbers
     sheet.add_jobs(new)
     sheet.add_seen(dropped)
     copies = sum(s["copies"] for s in stats.values())
+    elsewhere = sum(s["elsewhere"] for s in stats.values())
     log.info("Status changes on existing rows: %d (closed today: %d); identical postings attached "
-             "to existing rows: %d", changed, len(closed), copies)
+             "to existing rows: %d; job-board listings of rows from another site: %d",
+             changed, len(closed), copies, elsewhere)
 
     run_at = datetime.now(IST).strftime("%Y-%m-%d %H:%M")
-    broken_before = sheet.previous_zero_sources(args.group)
+    broken_before = sheet.previous_zero_sources()
     sheet.add_log([[run_at, args.group, name, s["fetched"], s["matched"], s["kept"], s["new"], s["error"],
                     "yes" if s["complete"] else "no", s["fallbacks"], s["conflicts"], s["closed"]]
                    for name, s in sorted(stats.items())])

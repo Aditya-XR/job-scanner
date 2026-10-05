@@ -1,0 +1,70 @@
+{
+ "data": {
+  "count": 3,
+  "positions": [
+   {
+    "id": 446718043315,
+    "displayJobId": "3089713",
+    "name": "Senior engineer / Lead engineer - Linux Kernel Software engineer",
+    "locations": [
+     "Bangalore, India"
+    ],
+    "standardizedLocations": [
+     "Bengaluru, KA, IN"
+    ],
+    "postedTs": 1776211200,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1776124800,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "3089713",
+    "positionUrl": "/careers/job/446718043315"
+   },
+   {
+    "id": 446719135898,
+    "displayJobId": "3090149",
+    "name": "ARM Server SoC Software & Firmware Systems Engineer (Sr. Staff / Principal)",
+    "locations": [
+     "Bangalore, India"
+    ],
+    "standardizedLocations": [
+     "Bengaluru, KA, IN"
+    ],
+    "postedTs": 1782259200,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1776729600,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": "flexible_within_country",
+    "atsJobId": "3090149",
+    "positionUrl": "/careers/job/446719135898"
+   },
+   {
+    "id": 446718352014,
+    "displayJobId": "3090614",
+    "name": "Director, Engineering – Wearables Software",
+    "locations": [
+     "Hyderabad, Telangāna, India"
+    ],
+    "standardizedLocations": [
+     "Hyderabad, TS, IN"
+    ],
+    "postedTs": 1783468800,
+    "solrScore": null,
+    "stars": 0,
+    "department": "Software Engineering",
+    "creationTs": 1777248000,
+    "isHot": 0,
+    "workLocationOption": "onsite",
+    "locationFlexibility": null,
+    "atsJobId": "3090614",
+    "positionUrl": "/careers/job/446718352014"
+   }
+  ]
+ }
+}

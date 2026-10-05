@@ -1,0 +1,66 @@
+{
+ "data": [
+  {
+   "id": 1671504,
+   "title": "Junior DevOps Engineer - Docker/Terraform",
+   "min": 1,
+   "max": 3,
+   "createdTimeMs": 1789466160669,
+   "locations": [
+    {
+     "id": 131,
+     "name": "Mohali"
+    }
+   ],
+   "companyData": {
+    "companyName": "Hostment",
+    "ambitionBoxInfo": {
+     "companyName": null
+    }
+   },
+   "confidential": 0
+  },
+  {
+   "id": 1675978,
+   "title": "Kroll - Associate Consultant - Offensive Security",
+   "min": 1,
+   "max": 3,
+   "createdTimeMs": 1790754508461,
+   "locations": [
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "companyData": {
+    "companyName": "Kroll",
+    "ambitionBoxInfo": {
+     "companyName": "Kroll"
+    }
+   },
+   "confidential": 0
+  },
+  {
+   "id": 1675108,
+   "title": "Exotel - Integration & Customization Engineer I - PHP/React.js",
+   "min": 1,
+   "max": 3,
+   "createdTimeMs": 1790512360577,
+   "locations": [
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "companyData": {
+    "companyName": "EXOTEL TECHCOM PRIVATE LIMITED",
+    "ambitionBoxInfo": {
+     "companyName": "Exotel"
+    }
+   },
+   "confidential": 0
+  }
+ ],
+ "totalJobs": 3,
+ "hasMore": false
+}

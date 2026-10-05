@@ -89,12 +89,16 @@ def test_amazon(monkeypatch):
     assert_ids(jobs, "amazon:", [j.get("id_icims") or j["id"] for j in data["jobs"]])
 
 
-def test_microsoft(monkeypatch):
+def test_eightfold_keeps_microsoft_ids(monkeypatch):
+    """Microsoft now goes through the general Eightfold reader; its IDs must not change, or every
+    Microsoft row already in the sheet would come back as new."""
     data = load("microsoft.json")
     serve(monkeypatch, get=lambda url, **kw: data)
-    jobs, complete = feeds.microsoft({"name": "Microsoft"})
+    jobs, complete = feeds.eightfold({"host": "apply.careers.microsoft.com", "domain": "microsoft.com",
+                                      "name": "Microsoft"})
     assert complete
     assert_ids(jobs, "microsoft:", [p["id"] for p in data["data"]["positions"]])
+    assert all(j.source == "Microsoft Careers" for j in jobs)
 
 
 def test_partial_read_is_not_complete(monkeypatch):
@@ -130,3 +134,66 @@ def test_check_ids_dedupes_repeats_and_keeps_conflicts():
     assert [j.title for j in out] == ["Software Engineer", "Data Engineer"]   # repeat dropped, clash kept
     assert out[0].job_id != out[1].job_id
     assert st["conflicts"] == 1
+
+
+# ---- career sites added 2026-10-05 (most moved off Workday) ----
+
+def test_eightfold_qualcomm(monkeypatch):
+    data = load("eightfold_qualcomm.json")
+    serve(monkeypatch, get=lambda url, **kw: data)
+    jobs, complete = feeds.eightfold({"host": "careers.qualcomm.com", "domain": "qualcomm.com", "name": "Qualcomm"})
+    assert complete
+    assert_ids(jobs, "qualcomm:", [p["id"] for p in data["data"]["positions"]])
+    assert jobs[0].url == f"https://careers.qualcomm.com/careers/job/{data['data']['positions'][0]['id']}"
+
+
+def test_eightfold_v2_netapp(monkeypatch):
+    data = load("eightfold_v2_netapp.json")
+    serve(monkeypatch, get=lambda url, **kw: data)
+    jobs, complete = feeds.eightfold_v2({"host": "netapp.eightfold.ai", "domain": "netapp.com", "name": "NetApp"})
+    assert complete
+    assert_ids(jobs, "netapp:", [p["id"] for p in data["positions"]])
+
+
+def test_jibe_amd(monkeypatch):
+    data = load("jibe_amd.json")
+    serve(monkeypatch, get=lambda url, **kw: data)
+    jobs, complete = feeds.jibe({"host": "careers.amd.com", "name": "AMD"})
+    assert complete
+    assert_ids(jobs, "amd:", [j["data"]["req_id"] for j in data["jobs"]])
+    assert all(j.description for j in jobs)        # in the list: no extra request per job
+
+
+def test_talentbrew_synopsys(monkeypatch):
+    data = load("talentbrew_synopsys.json")
+    serve(monkeypatch, get=lambda url, **kw: data)
+    jobs, complete = feeds.talentbrew({"host": "careers.synopsys.com", "country_facet": "1269750",
+                                       "name": "Synopsys"})
+    assert complete
+    assert len(jobs) == 3
+    assert_ids(jobs, "synopsys:", [j.url.rsplit("/", 1)[1] for j in jobs])   # the number ending the job URL
+    assert all(j.posted for j in jobs)
+
+
+def test_oracle_dell(monkeypatch):
+    data = load("oracle_dell.json")
+    urls = []
+    serve(monkeypatch, get=lambda url, **kw: urls.append(url) or data)
+    jobs, complete = feeds.oracle({"api": "enterpriseplatform.dell.com", "site": "CX_1001",
+                                   "country_facet": "300000000471053",
+                                   "jobs_page": "jobs.dell.com/en/sites/careers", "name": "Dell"})
+    assert complete
+    assert_ids(jobs, "dell:", [r["Id"] for r in data["items"][0]["requisitionList"]])
+    assert "finder=findReqs;siteNumber=CX_1001," in urls[0]   # Oracle rejects an encoded finder
+
+
+def test_goldman(monkeypatch):
+    data = load("goldman.json")
+    empty = {"data": {"roleSearch": {"totalCount": 0, "items": []}}}
+    serve(monkeypatch, post=lambda url, body, **kw:
+          data if "PROFESSIONAL" in body["variables"]["searchQueryInput"]["experiences"] else empty)
+    jobs, complete = feeds.goldman({"name": "Goldman Sachs"})
+    assert complete
+    assert_ids(jobs, "goldman:", [r["externalSource"]["sourceId"] for r in data["data"]["roleSearch"]["items"]])
+    # titles name the team and rank, so the job function is added for the software-title check
+    assert all("software engineering" in j.title.lower() for j in jobs)

@@ -1,0 +1,57 @@
+{
+ "data": {
+  "roleSearch": {
+   "totalCount": 3,
+   "items": [
+    {
+     "jobTitle": "Engineering Division - OneGS Identity - Vice President - Bengaluru",
+     "corporateTitle": "Vice President",
+     "jobFunction": "Software Engineering",
+     "lastPostedDate": "2026-10-02T07:26:26.996Z",
+     "descriptionHtml": "<p><strong>HOW YOU WILL FULFILL YOUR POTENTIAL</strong></p>\n<ul><li>Document, design, and test service-oriented enterprise software to help deliver critical business functions related to Authentication and Lifecycle Management of firm’s digital client identities. </li><li>Liaise with the firm’s technology risk groups to review design against the prescribed architecture, security and control framework for secure deployments.</li><li>Participate in definition of requirements and help with deployment and support.</li><li>Ensure that all platforms are built in accordance with the firm’s SDLC recom",
+     "locations": [
+      {
+       "city": "Bengaluru",
+       "country": "India"
+      }
+     ],
+     "externalSource": {
+      "sourceId": "163723"
+     }
+    },
+    {
+     "jobTitle": "Engineering Division - AI Science Engineering - Software Engineering - Vice President - Bengaluru/Hyderabad",
+     "corporateTitle": "Vice President",
+     "jobFunction": "Software Engineering",
+     "lastPostedDate": "2026-10-01T18:43:57.522Z",
+     "descriptionHtml": "<p><strong>Summary</strong></p>\n<p>The agile AI Innovation Acceleration team will operate with the speed and spirit of a startup, focused on rapidly prototyping and building cutting-edge AI use cases that directly address the critical needs of our businesses. The primary goal of this team is to demonstrate the transformative potential of AI within the firm, rapidly deliver impactful solutions, and then seamlessly transfer the code, knowledge, and ownership to the respective business and engineering teams. This hands-on engineering role is pivotal in shaping the future of AI adoption at Goldman",
+     "locations": [
+      {
+       "city": "Hyderabad",
+       "country": "India"
+      }
+     ],
+     "externalSource": {
+      "sourceId": "165710"
+     }
+    },
+    {
+     "jobTitle": "The Core Engineering - Payments Tech - Associate - Hyderabad",
+     "corporateTitle": "Associate",
+     "jobFunction": "Software Engineering",
+     "lastPostedDate": "2026-10-01T13:31:28.798Z",
+     "descriptionHtml": "<p>The Core Engineering </p><p>The Core Engineering builds and operates the platforms, applications, data solutions, models, and analytics that power critical processes for The Core divisions of the firm (e.g., Risk, responsible for the risk profile of firm activities; Controllers, responsible for the financial control and reporting obligations; Compliance, responsible for the firm’s compliance, regulatory, and reputational risks; Corporate Treasury, responsible for the firm’s liquidity, funding, balance sheet, etc.; and Human Capital Management, responsible for attracting, developing, and man",
+     "locations": [
+      {
+       "city": "Hyderabad",
+       "country": "India"
+      }
+     ],
+     "externalSource": {
+      "sourceId": "170572"
+     }
+    }
+   ]
+  }
+ }
+}

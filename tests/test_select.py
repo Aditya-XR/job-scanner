@@ -3,6 +3,7 @@ from datetime import date
 
 from jobscan.core import Job
 from jobscan.run import select
+from jobscan.sources.boards import BOARDS
 from jobscan.state import Row, Tracker
 
 FRESHER_JD = "We hire freshers. 0-1 years of experience in Java or Python."
@@ -12,7 +13,7 @@ SENIOR_JD = "You need 5+ years of professional experience building distributed s
 def job(jid, title="Software Engineer", company="Cisco", source="Workday", loc="Bangalore, India",
         desc=FRESHER_JD, group=""):
     return Job(source, company, title, loc, f"https://example.com/{jid}", job_id=jid, group_id=group,
-               posted=date(2026, 10, 3), description=desc)
+               posted=date(2026, 10, 3), description=desc, feed=source if source in BOARDS else company)
 
 
 def run(jobs, stats, no_ai, rows=(), dropped=()):
@@ -67,11 +68,11 @@ def test_known_posting_is_not_added_twice(fixed_today, stats, no_ai):
 
 def test_same_opening_on_two_sites_is_one_row(fixed_today, stats, no_ai):
     feed = job("gh:1", source="Greenhouse", company="Swiggy")
-    board = job("li:1", source="LinkedIn", company="Swiggy", desc=FRESHER_JD + " (via LinkedIn)")
+    board = job("unstop:1", source="Unstop", company="Swiggy Pvt. Ltd.", desc=FRESHER_JD + " (via Unstop)")
     new, _ = run([board, feed], stats, no_ai)
     assert len(new) == 1
-    assert new[0].source == "Greenhouse" and new[0].also_seen_on == ["LinkedIn"]
-    assert set(new[0].all_ids) == {"gh:1", "li:1"}
+    assert new[0].source == "Greenhouse" and new[0].also_seen_on == ["Unstop"]   # the company's own link
+    assert set(new[0].all_ids) == {"gh:1", "unstop:1"}
 
 
 def test_filters_still_apply(fixed_today, stats, no_ai):
@@ -122,3 +123,22 @@ def test_fingerprint_ignores_case_and_spacing_but_not_numbers():
     assert fingerprint("0-1 Years of\n  Java") == fingerprint("0-1 years of java")
     assert fingerprint("0-1 years of Java") != fingerprint("5+ years of Java")
     assert fingerprint("") == fingerprint("   ") == ""
+
+
+def test_board_listing_of_a_row_from_another_site_is_attached_not_added(fixed_today, stats, no_ai):
+    row = Row(2, ["greenhouse:swiggy:1"], "Swiggy", "Open", title="Software Engineer", source="Greenhouse")
+    tracker = Tracker([row], [], date(2026, 10, 4))
+    board = job("unstop:7", source="Unstop", company="Swiggy Technologies", desc=FRESHER_JD + " via Unstop")
+    new, dropped = select([board], stats, tracker, gemini=no_ai)
+    assert new == [] and dropped == []
+    assert row.also_seen_on == "Unstop" and row.all_ids == ["greenhouse:swiggy:1", "unstop:7"]
+    assert stats["Unstop"]["elsewhere"] == 1
+
+
+def test_a_company_feed_posting_is_never_hidden_behind_a_board_row(fixed_today, stats, no_ai):
+    """Only board postings are matched by company + title. The company's own new posting gets a
+    row even if a board row has the same title (at worst a duplicate, never a hidden job)."""
+    row = Row(2, ["unstop:7"], "Swiggy", "Open", title="Software Engineer", source="Unstop", feed="Unstop")
+    new, _ = select([job("greenhouse:swiggy:2", source="Greenhouse", company="Swiggy")], stats,
+                    Tracker([row], [], date(2026, 10, 4)), gemini=no_ai)
+    assert [j.job_id for j in new] == ["greenhouse:swiggy:2"]

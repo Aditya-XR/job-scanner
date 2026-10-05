@@ -1,0 +1,63 @@
+{
+ "jobSearchResponse": {
+  "meta": {
+   "paging": {
+    "total": 3
+   }
+  },
+  "data": [
+   {
+    "jobId": 69337011,
+    "title": "Ignition Developer",
+    "companyName": "Infosys Limited",
+    "locations": "Bengaluru, India",
+    "freshness": 1791166882000,
+    "createdAt": 1791167005000,
+    "minimumExperience": {
+     "years": 0
+    },
+    "maximumExperience": {
+     "years": 0
+    },
+    "seoJdUrl": "/job/ignition-developer-infosys-limited-bengaluru-bangalore-india-69337011",
+    "jdUrl": "/job/ignition-developer-infosys-limited-bengaluru-bangalore-69337011"
+   },
+   {
+    "index": "0",
+    "type": "adsense"
+   },
+   {
+    "jobId": 69337004,
+    "title": "Embedded Engineer Simulation Development",
+    "companyName": "Infosys Limited",
+    "locations": "Pune, India",
+    "freshness": 1791166625000,
+    "createdAt": 1791167003000,
+    "minimumExperience": {
+     "years": 0
+    },
+    "maximumExperience": {
+     "years": 0
+    },
+    "seoJdUrl": "/job/embedded-engineer-simulation-development-infosys-limited-pune-india-69337004",
+    "jdUrl": "/job/embedded-engineer-simulation-development-infosys-limited-pune-69337004"
+   },
+   {
+    "jobId": 69336827,
+    "title": "Medical coder fresher-Egmore, Chennai-WhatsApp HR-7200003809",
+    "companyName": "Happy Jobs Worldwide Solutions",
+    "locations": "Chennai",
+    "freshness": 1791163044000,
+    "createdAt": 1791163044000,
+    "minimumExperience": {
+     "years": 0
+    },
+    "maximumExperience": {
+     "years": 1
+    },
+    "seoJdUrl": "/job/medical-coder-fresher-egmore-chennai-whatsapp-hr-7200003809-happy-jobs-worldwide-solutions-chennai-69336827",
+    "jdUrl": "/job/medical-coder-fresher-egmore-chennai-whatsapp-hr-7200003809-happy-jobs-worldwide-solutions-chennai-69336827"
+   }
+  ]
+ }
+}

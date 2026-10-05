@@ -1,0 +1,83 @@
+{
+ "count": 3,
+ "positions": [
+  {
+   "id": 44220066,
+   "name": "Principal Engineer - Cloud Architecture, AI-Driven Operations & SaaS Platform Engineering",
+   "posting_name": "Principal Engineer - Cloud Architecture, AI-Driven Operations & SaaS Platform Engineering",
+   "location": "Bangalore, India Office (BANGALORE)",
+   "locations": [
+    "Bangalore, India Office (BANGALORE)"
+   ],
+   "hot": 1,
+   "department": "IC 6",
+   "business_unit": "Product Group (B6000)",
+   "t_update": 1788714220,
+   "t_create": 1787916729,
+   "ats_job_id": "136279",
+   "display_job_id": "136279",
+   "type": "ATS",
+   "id_locale": "136279-en_US",
+   "job_description": "",
+   "locale": "en_US",
+   "stars": 0.0,
+   "medallionProgram": null,
+   "location_flexibility": null,
+   "work_location_option": "hybrid",
+   "canonicalPositionUrl": "https://netapp.eightfold.ai/careers/job/44220066",
+   "isPrivate": false
+  },
+  {
+   "id": 43057794,
+   "name": "Senior Software Engineer (Cloud-Native Services, Go, C, C++, Kubernetes, AWS/Azure)",
+   "posting_name": "Senior Software Engineer (Cloud-Native Services, Go, C, C++, Kubernetes, AWS/Azure)",
+   "location": "Bangalore, India Office (BANGALORE)",
+   "locations": [
+    "Bangalore, India Office (BANGALORE)"
+   ],
+   "hot": 1,
+   "department": "IC 4",
+   "business_unit": "Product Group (B6000)",
+   "t_update": 1787669645,
+   "t_create": 1783660979,
+   "ats_job_id": "135670",
+   "display_job_id": "135670",
+   "type": "ATS",
+   "id_locale": "135670-en_US",
+   "job_description": "",
+   "locale": "en_US",
+   "stars": 0.0,
+   "medallionProgram": null,
+   "location_flexibility": null,
+   "work_location_option": "onsite",
+   "canonicalPositionUrl": "https://netapp.eightfold.ai/careers/job/43057794",
+   "isPrivate": false
+  },
+  {
+   "id": 43057791,
+   "name": "Software Engineer(Go,C, C++,Python, Java,Kubernetes, Microservices)",
+   "posting_name": "Software Engineer(Go,C, C++,Python, Java,Kubernetes, Microservices)",
+   "location": "Bangalore, India Office (BANGALORE)",
+   "locations": [
+    "Bangalore, India Office (BANGALORE)"
+   ],
+   "hot": 1,
+   "department": "IC 3",
+   "business_unit": "Product Group (B6000)",
+   "t_update": 1790162513,
+   "t_create": 1783660466,
+   "ats_job_id": "135669",
+   "display_job_id": "135669",
+   "type": "ATS",
+   "id_locale": "135669-en_US",
+   "job_description": "",
+   "locale": "en_US",
+   "stars": 0.0,
+   "medallionProgram": null,
+   "location_flexibility": null,
+   "work_location_option": "onsite",
+   "canonicalPositionUrl": "https://netapp.eightfold.ai/careers/job/43057791",
+   "isPrivate": false
+  }
+ ]
+}

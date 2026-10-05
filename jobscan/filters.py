@@ -37,7 +37,7 @@ _SOFTWARE = re.compile(
     r"applied scientist|research engineer|security engineer|systems engineer|backend|frontend)\b",
     re.I)
 _SENIOR = re.compile(
-    r"\b(senior|sr|lead|staff|principal|manager|director|head|vp|vice president|architect|"
+    r"\b(senior|sr|leads?|staff|principal|managers?|directors?|heads?|vp|vice president|architects?|"
     r"distinguished|fellow|ii|iii|iv|expert|specialist|leader|intermediate|experienced|mid[ -]level|"
     r"dir|mgr|(engineering|engrg|engg|development|software) (mgmt|management))\b|"
     r"\b(sde|engineer|developer|mts|scientist)[\s-]*([2-9])\b|\b\d{1,2}\s*\+?\s*(years?|yrs)\b",
@@ -45,7 +45,8 @@ _SENIOR = re.compile(
 _NOT_SOFTWARE = re.compile(
     r"\b(sales|marketing|mechanical|civil|hardware|asic|rtl|dft|analog|silicon|physical design|"
     r"layout|customer success|support engineer|technical support|recruit\w*|accountant|"
-    r"account executive|legal|finance|hr|clerk|cashier|warehouse|driver)\b", re.I)
+    r"account executive|legal|finance|hr|clerk|cashier|warehouse|driver|business development|"
+    r"pre[ -]?sales|demo executive|content (developer|writer)|curriculum)\b", re.I)
 ENTRY_TITLE = re.compile(r"\b(intern|internship|new grad|graduate|trainee|fresher|entry[ -]level|"
                          r"university|campus|apprentice|associate software engineer)\b", re.I)
 
@@ -96,7 +97,8 @@ def _requirements(text: str):
         window = text[max(0, m.start() - 90): m.end() + 90]
         if lo > 20 or _NOT_EXP.search(text[m.start(): m.end() + 25]) or not _EXP_CONTEXT.search(window):
             continue
-        if _HISTORY.search(text[m.end(): m.end() + 15]) or _HISTORY.search(_same_sentence_before(text, m.start())):
+        after = re.split(r"[.\n;•]", text[m.end(): m.end() + 15], maxsplit=1)[0]   # same sentence only
+        if _HISTORY.search(after) or _HISTORY.search(_same_sentence_before(text, m.start())):
             continue
         if _HIGHER_DEGREE.search(text[max(0, m.start() - 30): m.start()]):
             continue

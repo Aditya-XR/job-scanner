@@ -1,0 +1,217 @@
+{
+ "data": {
+  "pageData": {
+   "jobs": [
+    {
+     "_id": "6ac2986e96423319f534931c",
+     "headline": "Financial Analyst",
+     "publicUrl": "https://cutshort.io/job/Financial-Analyst-Delhi-Gurugram-Noida-Ghaziabad-Faridabad-Kolkata-Mumbai-Hyderabad-Bengaluru-Bangalore-Gravity-Engineering-Services-Pvt-Ltd-fYXKrmK0",
+     "locations": [
+      "Delhi",
+      "Gurugram",
+      "Noida",
+      "Ghaziabad",
+      "Faridabad",
+      "Kolkata",
+      "Mumbai",
+      "Hyderabad",
+      "Bengaluru (Bangalore)"
+     ],
+     "remoteType": "remote_not_okay",
+     "expRange": {
+      "min": 1,
+      "maxInternal": 10,
+      "max": 10,
+      "minVanity": 1,
+      "maxVanity": 10
+     },
+     "companyDetails": {
+      "_id": "668e217da9001500282ba4d9",
+      "name": "Gravity Engineering Services Pvt Ltd",
+      "logo": "https://cdnv2.cutshort.io/company-static/668e217da9001500282ba4d9/user_uploaded_data/logos/company_logo.png",
+      "ogImage": "https://cdn.cutshort.io/public/socialshare-ogimage/id689e27e0204ff353ec71ea0etime1755195360681-og.jpg",
+      "founded": 2012,
+      "type": "Services",
+      "size": "100-1000",
+      "stage": "Profitable",
+      "description": "We catalyze business growth by reimagining digital experiences that conquer complex challenges through innovation and agility.\n\nWith our team of 300+ tech evangelists, we are building the digital infrastructure of our Partners positioning them to be the market leaders of their respective industries.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "gravity-engineering-services-pvt-ltd-88-rYcGXla3",
+      "hiringForClient": false,
+      "followersCount": 4659,
+      "sanitizedDescription": "We catalyze business growth by reimagining digital experiences that conquer complex challenges through innovation and agility.\n\nWith our team of 300+ tech evangelists, we are building the digital infrastructure of our Partners positioning them to be the market leaders of their respective industries.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "funding": "3",
+      "newSize": "service_3",
+      "links": {
+       "website": "https://gravityer.com",
+       "blog": "https://gravityer.com/blog",
+       "about": "https://gravityer.com/about",
+       "linkedin": "https://linkedin.com/company/gravity-engineering-services-private-limited",
+       "articles": []
+      }
+     },
+     "companyId": {
+      "alias": "gravity-engineering-services-pvt-ltd-88-rYcGXla3",
+      "name": "Gravity Engineering Services Pvt Ltd",
+      "_id": "668e217da9001500282ba4d9"
+     },
+     "jobFactSummary": {
+      "roleTitle": "Financial Analyst",
+      "companyName": "Gravity Engineering Services Pvt Ltd",
+      "locations": "Delhi, Gurugram, Noida, Ghaziabad, Faridabad, Kolkata, Mumbai, Hyderabad, Bengaluru (Bangalore)",
+      "companyStage": "Profitable",
+      "experience": "1 - 10 years",
+      "salary": "₹5L - ₹22L / yr",
+      "postedDate": "2026-10-04T18:18:22.029Z",
+      "postedDateLabel": "Posted 4 Oct 2026"
+     },
+     "sanitizedComment": "<p>We are looking for a Financial Analyst to support planning and business decisions.</p><p><br /></p><p><strong>Responsibilities</strong></p><ul><li>Build financial models and forecasts</li><li>Prepare budgets and variance reports</li><li>Analyse business and unit performance</li><li>Support leadership with financial insights</li></ul><p><strong>Requirements</strong></p><ul><li>1+ years in financial analysis or FP&amp;A</li><li>Advanced Excel and modelling skills</li><li>CA, CFA or MBA Finance is a plus</li></ul><p><br /></p>"
+    },
+    {
+     "_id": "6ac2949dbe03af8f25b9de69",
+     "headline": "Social Media Manager",
+     "publicUrl": "https://cutshort.io/job/Social-Media-Manager-Delhi-Gurugram-Noida-Ghaziabad-Faridabad-Kolkata-Pune-Gravity-Engineering-Services-Pvt-Ltd-kr2wKDmD",
+     "locations": [
+      "Delhi",
+      "Gurugram",
+      "Noida",
+      "Ghaziabad",
+      "Faridabad",
+      "Kolkata",
+      "Pune"
+     ],
+     "remoteType": "remote_not_okay",
+     "expRange": {
+      "min": 1,
+      "maxInternal": 8,
+      "max": 8,
+      "minVanity": 1,
+      "maxVanity": 8
+     },
+     "companyDetails": {
+      "_id": "668e217da9001500282ba4d9",
+      "name": "Gravity Engineering Services Pvt Ltd",
+      "logo": "https://cdnv2.cutshort.io/company-static/668e217da9001500282ba4d9/user_uploaded_data/logos/company_logo.png",
+      "ogImage": "https://cdn.cutshort.io/public/socialshare-ogimage/id689e27e0204ff353ec71ea0etime1755195360681-og.jpg",
+      "founded": 2012,
+      "type": "Services",
+      "size": "100-1000",
+      "stage": "Profitable",
+      "description": "We catalyze business growth by reimagining digital experiences that conquer complex challenges through innovation and agility.\n\nWith our team of 300+ tech evangelists, we are building the digital infrastructure of our Partners positioning them to be the market leaders of their respective industries.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "gravity-engineering-services-pvt-ltd-88-rYcGXla3",
+      "hiringForClient": false,
+      "followersCount": 4659,
+      "sanitizedDescription": "We catalyze business growth by reimagining digital experiences that conquer complex challenges through innovation and agility.\n\nWith our team of 300+ tech evangelists, we are building the digital infrastructure of our Partners positioning them to be the market leaders of their respective industries.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "funding": "3",
+      "newSize": "service_3",
+      "links": {
+       "website": "https://gravityer.com",
+       "blog": "https://gravityer.com/blog",
+       "about": "https://gravityer.com/about",
+       "linkedin": "https://linkedin.com/company/gravity-engineering-services-private-limited",
+       "articles": []
+      }
+     },
+     "companyId": {
+      "alias": "gravity-engineering-services-pvt-ltd-88-rYcGXla3",
+      "name": "Gravity Engineering Services Pvt Ltd",
+      "_id": "668e217da9001500282ba4d9"
+     },
+     "jobFactSummary": {
+      "roleTitle": "Social Media Manager",
+      "companyName": "Gravity Engineering Services Pvt Ltd",
+      "locations": "Delhi, Gurugram, Noida, Ghaziabad, Faridabad, Kolkata, Pune",
+      "companyStage": "Profitable",
+      "experience": "1 - 8 years",
+      "salary": "₹3L - ₹15L / yr",
+      "postedDate": "2026-10-04T18:02:05.652Z",
+      "postedDateLabel": "Posted 4 Oct 2026"
+     },
+     "sanitizedComment": "<p>We are looking for a Social Media Manager to grow our brand across social channels.</p><p><br /></p><p><strong>Responsibilities</strong></p><ul><li>Plan and publish content across Instagram, LinkedIn and X</li><li>Grow and engage our community</li><li>Work with design on creatives</li><li>Report on reach, engagement and growth</li></ul><p><strong>Requirements</strong></p><ul><li>1+ years managing brand social media</li><li>Strong content and trend sense</li><li>Experience with social analytics tools</li></ul><p><br /></p>"
+    },
+    {
+     "_id": "6ac297954f27b6b2f677afe9",
+     "headline": "Operations Manager",
+     "publicUrl": "https://cutshort.io/job/Operations-Manager-Delhi-Gurugram-Noida-Ghaziabad-Faridabad-Mumbai-Kolkata-Gravity-Engineering-Services-Pvt-Ltd-c7134oWO",
+     "locations": [
+      "Delhi",
+      "Gurugram",
+      "Noida",
+      "Ghaziabad",
+      "Faridabad",
+      "Mumbai",
+      "Kolkata"
+     ],
+     "remoteType": "remote_not_okay",
+     "expRange": {
+      "min": 3,
+      "maxInternal": 12,
+      "max": 12,
+      "minVanity": 3,
+      "maxVanity": 12
+     },
+     "companyDetails": {
+      "_id": "668e217da9001500282ba4d9",
+      "name": "Gravity Engineering Services Pvt Ltd",
+      "logo": "https://cdnv2.cutshort.io/company-static/668e217da9001500282ba4d9/user_uploaded_data/logos/company_logo.png",
+      "ogImage": "https://cdn.cutshort.io/public/socialshare-ogimage/id689e27e0204ff353ec71ea0etime1755195360681-og.jpg",
+      "founded": 2012,
+      "type": "Services",
+      "size": "100-1000",
+      "stage": "Profitable",
+      "description": "We catalyze business growth by reimagining digital experiences that conquer complex challenges through innovation and agility.\n\nWith our team of 300+ tech evangelists, we are building the digital infrastructure of our Partners positioning them to be the market leaders of their respective industries.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "gravity-engineering-services-pvt-ltd-88-rYcGXla3",
+      "hiringForClient": false,
+      "followersCount": 4659,
+      "sanitizedDescription": "We catalyze business growth by reimagining digital experiences that conquer complex challenges through innovation and agility.\n\nWith our team of 300+ tech evangelists, we are building the digital infrastructure of our Partners positioning them to be the market leaders of their respective industries.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "funding": "3",
+      "newSize": "service_3",
+      "links": {
+       "website": "https://gravityer.com",
+       "blog": "https://gravityer.com/blog",
+       "about": "https://gravityer.com/about",
+       "linkedin": "https://linkedin.com/company/gravity-engineering-services-private-limited",
+       "articles": []
+      }
+     },
+     "companyId": {
+      "alias": "gravity-engineering-services-pvt-ltd-88-rYcGXla3",
+      "name": "Gravity Engineering Services Pvt Ltd",
+      "_id": "668e217da9001500282ba4d9"
+     },
+     "jobFactSummary": {
+      "roleTitle": "Operations Manager",
+      "companyName": "Gravity Engineering Services Pvt Ltd",
+      "locations": "Delhi, Gurugram, Noida, Ghaziabad, Faridabad, Mumbai, Kolkata",
+      "companyStage": "Profitable",
+      "experience": "3 - 12 years",
+      "salary": "₹6L - ₹25L / yr",
+      "postedDate": "2026-10-04T18:14:45.039Z",
+      "postedDateLabel": "Posted 4 Oct 2026"
+     },
+     "sanitizedComment": "<p>We are hiring an Operations Manager to keep our business running smoothly and efficiently.</p><p><br /></p><p><strong>Responsibilities</strong></p><ul><li>Run day-to-day business operations</li><li>Improve processes and reduce costs</li><li>Manage vendors and internal teams</li><li>Build reports and track key metrics</li></ul><p><strong>Requirements</strong></p><ul><li>3+ years in operations</li><li>Strong Excel and reporting skills</li><li>Experience managing teams</li></ul><p><br /></p>"
+    }
+   ]
+  }
+ }
+}

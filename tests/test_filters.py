@@ -14,6 +14,8 @@ from jobscan.filters import experience_check, is_india, is_software
     ("Bachelors + 2 years of related experience OR Masters + 0 years of related experience.", "drop"),
     ("MS + 0-2 years or BS + 1-3 years of experience", "drop"),
     ("Freshers welcome! 2+ years of experience preferred", "unclear"),
+    # a board's own range on the first line; "We ..." on the next line is not company history
+    ("Experience: 2-4 years\nWe are a fast-growing startup", "drop"),
 ])
 def test_experience(desc, decision):
     assert experience_check("Software Engineer", desc)[0] == decision
@@ -33,6 +35,10 @@ def test_experience_in_title_counts():
     ("Software Engineer II", False), ("Senior Software Engineer", False), ("SDE-2", False),
     ("Lead MTS", False), ("Sales Engineer", False), ("Hardware Engineer", False),
     ("Software Engineering Technical Leader", False), ("Product Security Engineer 5", False),
+    # seen on job boards, 2026-10-05
+    ("Applied Machine Learning Engineering Managers", False), ("Business Development Executive (IT / Software)", False),
+    ("Curriculum Content Developer (Coding)", False), ("Software Product Demo Executive", False),
+    ("Junior Software Developer", True), ("Java Developer Executive (Remote)", True),
 ])
 def test_is_software(title, ok):
     assert is_software(title) is ok

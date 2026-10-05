@@ -1,8 +1,11 @@
 """Shared pieces: settings from .env, the Job record, and an HTTP session with retries."""
 import hashlib
 import html
+import json
 import os
 import re
+import threading
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -52,16 +55,23 @@ def fingerprint(description: str) -> str:
     return hashlib.sha1(text.encode()).hexdigest()[:16] if text else ""
 
 
+# Words job boards add to a company's name: "Walmart Global Tech India Pvt. Ltd." -> "walmart"
+_COMPANY_NOISE = re.compile(
+    r"\b(private|pvt|limited|ltd|inc|incorporated|llp|llc|corp|corporation|co|company|"
+    r"technologies|technology|tech|global|india|solutions|services|software|labs)\b")
+
+
 def job_key(company: str, title: str) -> str:
     """Company + title, normalized. Only used to spot the same opening on two different
-    sites (e.g. a company feed and LinkedIn), never to decide whether a posting is new."""
-    norm = lambda s: re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
-    return f"{norm(company)}|{norm(title)}"
+    sites (e.g. a company feed and a job board), never to decide whether a posting is new."""
+    norm = lambda s: " ".join(re.sub(r"[^a-z0-9]+", " ", s.lower()).split())
+    name = norm(_COMPANY_NOISE.sub(" ", norm(company))) or norm(company)
+    return f"{name}|{norm(title)}"
 
 
 @dataclass
 class Job:
-    source: str                      # where we read it: "Greenhouse", "Workday", "LinkedIn"...
+    source: str                      # where we read it: "Greenhouse", "Workday", "Unstop"...
     company: str
     title: str
     location: str
@@ -79,6 +89,7 @@ class Job:
     also_seen_on: list = field(default_factory=list)
     extra_ids: list = field(default_factory=list)  # IDs of identical copies merged into this row
     reposted: bool = False
+    feed: str = ""                   # the Run log line it came from: a company feed or a job board
 
     @property
     def all_ids(self) -> list:
@@ -120,12 +131,47 @@ def post_json(url: str, body: dict, **kw):
     return r.json()
 
 
+def get_text(url: str, **kw) -> str:
+    r = HTTP.get(url, timeout=30, **kw)
+    r.raise_for_status()
+    return r.text
+
+
+class Throttle:
+    """At most one request every `interval` seconds, shared by all threads. Job boards get
+    one detail request per job, and the description loader runs 12 at a time."""
+
+    def __init__(self, interval: float):
+        self.interval, self._next, self._lock = interval, 0.0, threading.Lock()
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            start = max(now, self._next)
+            self._next = start + self.interval
+        if start > now:
+            time.sleep(start - now)
+
+
 def html_to_text(s: str) -> str:
     if not s:
         return ""
     s = html.unescape(s)  # Greenhouse double-escapes its HTML
     text = BeautifulSoup(s, "html.parser").get_text("\n")
     return re.sub(r"\n\s*\n+", "\n", text).strip()
+
+
+def json_ld_description(page_html: str) -> str:
+    """Description text from the schema.org JobPosting block that job pages embed for Google
+    Jobs, or "" if the page has none."""
+    for script in BeautifulSoup(page_html, "html.parser").select('script[type="application/ld+json"]'):
+        try:
+            data = json.loads(script.get_text(), strict=False)
+        except ValueError:
+            continue
+        if isinstance(data, dict) and data.get("@type") == "JobPosting":
+            return html_to_text(data.get("description", ""))
+    return ""
 
 
 def parse_date(value) -> Optional[date]:

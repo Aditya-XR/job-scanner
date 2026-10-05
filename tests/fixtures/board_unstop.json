@@ -1,0 +1,168 @@
+{
+ "data": {
+  "total": 3,
+  "last_page": 1,
+  "data": [
+   {
+    "id": 1763614,
+    "title": "PHP Developer",
+    "seo_url": "https://unstop.com/jobs/php-developer-esteplogic-it-solutions-pvt-ltd-1763614",
+    "public_url": "jobs/php-developer-esteplogic-it-solutions-pvt-ltd-1763614",
+    "approved_date": "2026-09-30 12:13:24 GMT+0530",
+    "locations": [
+     {
+      "id": 1856092,
+      "city": "Ambala",
+      "state": "Haryana",
+      "country": "India",
+      "addressable_id": 1763614,
+      "addressable_type": "App\\Model\\Opportunity"
+     },
+     {
+      "id": 1856093,
+      "city": "Chandigarh",
+      "state": "Chandigarh",
+      "country": "India",
+      "addressable_id": 1763614,
+      "addressable_type": "App\\Model\\Opportunity"
+     },
+     {
+      "id": 1856094,
+      "city": "Mohali",
+      "state": "Punjab",
+      "country": "India",
+      "addressable_id": 1763614,
+      "addressable_type": "App\\Model\\Opportunity"
+     },
+     {
+      "id": 1856095,
+      "city": "Panchkula",
+      "state": "Haryana",
+      "country": "India",
+      "addressable_id": 1763614,
+      "addressable_type": "App\\Model\\Opportunity"
+     },
+     {
+      "id": 1856096,
+      "city": "Yamunanagar",
+      "state": "Haryana",
+      "country": "India",
+      "addressable_id": 1763614,
+      "addressable_type": "App\\Model\\Opportunity"
+     }
+    ],
+    "organisation": {
+     "name": "Esteplogic IT Solutions Pvt. Ltd"
+    },
+    "jobDetail": {
+     "entity_id": 1763614,
+     "currency": "fa-rupee",
+     "locations": [
+      "Ambala",
+      "Chandigarh",
+      "Mohali",
+      "Panchkula",
+      "Yamunanagar"
+     ],
+     "type": "in_office",
+     "show_salary": 0,
+     "min_experience": null,
+     "max_experience": null,
+     "timing": "full_time",
+     "paid_unpaid": "paid",
+     "pay_in": "monthly",
+     "not_disclosed": false
+    },
+    "regnRequirements": {
+     "start_regn_dt": "2026-09-30T00:00:00+05:30",
+     "eligibility": "{\"sector\":[\"fresher\"],\"engineering\":[],\"bSchools\":[],\"arts\":[],\"medicine\":[],\"law\":[],\"others\":[\"all\"],\"experience\":[\"all\"],\"studentPassoutYearsSelected\":[\"all\"],\"fresherPassoutYearsSelected\":[2025,2026],\"schoolFilteredClasses\":[\"all\"],\"minMarks\":{\"high_school_perc\":0,\"high_school_cgpa\":0},\"locations\":[],\"location_type\":\"all\",\"professionalEligibility\":null,\"fresherEligibility\":null}"
+    },
+    "details": "<p><strong>PHP Developer (Fresher)</strong></p>\n<p>We are looking for a Fresher PHP Developer to join our team at <strong>Esteplogic IT Solution Pvt Ltd.</strong></p>\n<p>As a PHP Developer, you will be responsible for building, enhancing, and supporting web applications and e-commerce platforms. You will collaborate with the development team to create reliable, secure, and scalable solutions while ensuring smooth application performance.</p>\n<p><strong>Job Profile: PHP Developer</strong></p>\n<p><strong>Key Responsibilities:</strong></p>\n<ul>\n<li>Support the development, enhancement, and mainte"
+   },
+   {
+    "id": 1762503,
+    "title": "Android App Developer",
+    "seo_url": "https://unstop.com/jobs/android-app-developer-mellow-vault-1762503",
+    "public_url": "jobs/android-app-developer-mellow-vault-1762503",
+    "approved_date": "2026-09-28 12:17:18 GMT+0530",
+    "locations": [
+     {
+      "id": 1854420,
+      "city": "Noida",
+      "state": "Uttar Pradesh",
+      "country": "India",
+      "addressable_id": 1762503,
+      "addressable_type": "App\\Model\\Opportunity"
+     }
+    ],
+    "organisation": {
+     "name": "Mellow Vault"
+    },
+    "jobDetail": {
+     "entity_id": 1762503,
+     "max_salary": 400000,
+     "currency": "fa-rupee",
+     "locations": [
+      "Noida"
+     ],
+     "type": "in_office",
+     "min_salary": 400000,
+     "show_salary": 1,
+     "min_experience": null,
+     "max_experience": null,
+     "timing": "full_time",
+     "paid_unpaid": "paid",
+     "pay_in": "annually",
+     "not_disclosed": false
+    },
+    "regnRequirements": {
+     "start_regn_dt": "2026-09-28T00:00:00+05:30",
+     "eligibility": "{\"sector\":[\"fresher\"],\"experience\":[\"1 year\"],\"fresherEligibility\":{\"engineering\":[{\"course\":\"btech\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[2024,2025,2026],\"specialization\":[\"Computer Science and Engineering\"],\"duration\":4,\"qualification\":\"graduation\"},{\"course\":\"mca\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[2024,2025,2026],\"specialization\":[\"all\"],\"duration\":2,\"qualification\":\"post graduation\"}],\"arts\":[{\"course\":\"msc\",\"type\":\"arts\",\"programme\":[\"all\"],\"passoutYear\":[2024,2025,2026],\"specialization\":[\"Computer Science\"],\"duration\":2,\"qualification\":\"post graduation\"}],\"bSchools\":[],\"medicine\":[],\"law\":[]},\"professionalEligibility\":{\"engineering\":[{\"course\":\"btech\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"Computer Science and Engineering\"],\"duration\":4,\"qualification\":\"graduation\"},{\"course\":\"mca\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"all\"],\"duration\":2,\"qualification\":\"post graduation\"}],\"arts\":[{\"course\":\"msc\",\"type\":\"arts\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"Computer Science\"],\"duration\":2,\"qualification\":\"post graduation\"}],\"bSchools\":[],\"medicine\":[],\"law\":[]},\"fresherPassoutYearsSelected\":[2024,2025,2026],\"studentPassoutYearsSelected\":[\"all\"]}"
+    },
+    "details": "<p><strong>Mellow Vault is hiring for Fresher Android App Developer</strong></p>\n<p><strong>About the Company</strong></p>\n<p><strong>Mellow Vault</strong> is a technology and talent infrastructure ecosystem that develops scalable software architectures, high-performance web applications, and intuitive mobile solutions for modern digital systems. The company offers an environment where early-career engineers can learn from experienced professionals while contributing to products used by real customers.</p>\n<p><strong>Responsibilities</strong></p>\n<ul>\n<li>Develop clean, maintainable Android ap"
+   },
+   {
+    "id": 1762594,
+    "title": "MERN Stack Developer",
+    "seo_url": "https://unstop.com/jobs/mern-stack-developer-mellow-vault-1762594",
+    "public_url": "jobs/mern-stack-developer-mellow-vault-1762594",
+    "approved_date": "2026-09-28 15:34:24 GMT+0530",
+    "locations": [
+     {
+      "id": 1854673,
+      "city": "Noida",
+      "state": "Uttar Pradesh",
+      "country": "India",
+      "addressable_id": 1762594,
+      "addressable_type": "App\\Model\\Opportunity"
+     }
+    ],
+    "organisation": {
+     "name": "Mellow Vault"
+    },
+    "jobDetail": {
+     "entity_id": 1762594,
+     "max_salary": 400000,
+     "currency": "fa-rupee",
+     "locations": [
+      "Noida"
+     ],
+     "type": "in_office",
+     "min_salary": 400000,
+     "show_salary": 1,
+     "min_experience": null,
+     "max_experience": null,
+     "timing": "full_time",
+     "paid_unpaid": "paid",
+     "pay_in": "annually",
+     "not_disclosed": false
+    },
+    "regnRequirements": {
+     "start_regn_dt": "2026-09-28T00:00:00+05:30",
+     "eligibility": "{\"sector\":[\"fresher\",\"corporates\"],\"experience\":[\"1 year\",\"2 years\"],\"fresherEligibility\":{\"engineering\":[{\"course\":\"btech\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"Computer Science and Engineering\"],\"duration\":4,\"qualification\":\"graduation\"},{\"course\":\"bca\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"all\"],\"duration\":3,\"qualification\":\"graduation\"},{\"course\":\"mca\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"all\"],\"duration\":2,\"qualification\":\"post graduation\"},{\"course\":\"mca1\",\"type\":\"engineering\",\"programme\":[\"all\"],\"passoutYear\":[\"all\"],\"specialization\":[\"all\"],\"duration\":3,\"qualification\":\"post graduation\"}],\"bSchools\":[],\"arts\":[],\"medicine\":[],\"law\":[]},\"professionalEligibility\":null,\"studentPassoutYearsSelected\":[\"all\"],\"fresherPassoutYearsSelected\":[2025,2026]}"
+    },
+    "details": "<p><strong>Mellow Vault is hiring a MERN Stack Developer!</strong></p>\n<p><strong>Responsibilities</strong></p>\n<ul>\n<li>Develop responsive and accessible interfaces using React.js, HTML5, CSS3, and JavaScript or TypeScript.</li>\n<li>Build and maintain RESTful APIs, server-side business logic, routing, and middleware with Node.js and Express.js.</li>\n<li>Work with MongoDB and Mongoose to create schemas, implement CRUD operations, and support efficient data access.</li>\n<li>Participate in planning, daily stand-ups, pair programming, debugging, testing, and code reviews with senior engineers and"
+   }
+  ]
+ }
+}
