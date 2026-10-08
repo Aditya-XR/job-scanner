@@ -19,10 +19,15 @@ guarded job boards ───┘                                                 
 | Open job boards that block GitHub's servers | Foundit (`python -m jobscan --group laptop`) | ✅ from your laptop |
 | Guarded job boards | LinkedIn, Naukri, Indeed, Wellfound, Instahyre (run from a laptop with a real browser) | planned |
 
-Every morning at about 07:30 IST, GitHub Actions ([`daily.yml`](.github/workflows/daily.yml)) reads
+Every morning at about 07:20 IST, GitHub Actions ([`daily.yml`](.github/workflows/daily.yml)) reads
 the company feeds and the open job boards, updates the sheet and sends the Gmail summary. Your
 laptop doesn't need to be on. Foundit's bot protection answers 403 to GitHub's servers, so it is
 read from your laptop (`--group laptop`), like the guarded boards will be.
+
+GitHub's own schedule has been starting runs 3-10 hours late, so the run is started by a time
+trigger in the sheet's Apps Script ([`start_scan.gs`](apps_script/start_scan.gs)), which GitHub
+starts at once. The workflow's own schedule is kept as a backup: it scans only if no scan has
+succeeded yet that day (IST), so a missed or failed morning run still happens, just late.
 
 ### What each job board is asked for
 
@@ -89,6 +94,18 @@ cp .env.example .env                               # fill in the values
 You need a Google Cloud service account with the Sheets and Drive APIs enabled, a Google Sheet
 shared with it as Editor, a Gemini API key, and a Gmail app password. See `.env.example`.
 
+### Morning trigger
+
+1. Create a [fine-grained GitHub token](https://github.com/settings/personal-access-tokens/new)
+   for this repository only, with one permission: **Actions: Read and write**.
+2. In the sheet, open **Extensions > Apps Script** and replace `Code.gs` with
+   [`apps_script/start_scan.gs`](apps_script/start_scan.gs).
+3. **Project Settings > Script Properties:** add `GITHUB_TOKEN` with the token.
+4. Run `install()` once and allow access. It checks the token and sets the daily trigger.
+
+If the token expires, the trigger fails (Google emails you) and the late backup run takes over
+until you paste in a new token.
+
 ## Run
 
 ```bash
@@ -116,3 +133,5 @@ secrets: `GOOGLE_SERVICE_ACCOUNT_JSON` (the key file's contents), `SHEET_ID`, `G
 `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` and `ALERT_TO`; `MAX_MIN_YEARS` and `GEMINI_MODEL` are
 optional repository variables. The daily workflow only runs on its schedule or by hand, never
 for pull requests, so forks can't reach the secrets. Logs only contain counts, never credentials.
+The morning trigger's GitHub token lives in the Apps Script's Script Properties, not in the code;
+it can only start and read this repository's workflow runs.

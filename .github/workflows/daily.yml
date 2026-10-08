@@ -1,8 +1,12 @@
 name: daily scan
+# Test runs get their own title, so they don't count as the day's scan (see the check job).
+run-name: ${{ (inputs.dry_run || inputs.only) && 'daily scan (test)' || 'daily scan' }}
 
 on:
   schedule:
-    # 07:20 IST. GitHub often starts scheduled runs 5-30 minutes late, more so on the hour.
+    # Backup only. Since late August 2026 GitHub has been starting scheduled runs 3-10 hours late
+    # (ours: about 6), so the 07:20 IST run is started from outside GitHub instead (see README).
+    # This one stops early unless today's scan is missing or failed.
     - cron: "50 1 * * *"
   workflow_dispatch:
     inputs:
@@ -24,12 +28,40 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read     # to list this workflow's earlier runs
+    outputs:
+      scan: ${{ steps.today.outputs.scan }}
+    steps:
+      - name: Has today's scan already run?
+        id: today
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != schedule ]; then echo "scan=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # Midnight IST in UTC; run times are UTC ISO-8601 strings, which compare in time order.
+          since=$(date -u -d "$(TZ=Asia/Kolkata date +%F) 00:00 +0530" +%Y-%m-%dT%H:%M:%SZ)
+          done=$(gh run list -R "$GITHUB_REPOSITORY" --workflow daily.yml --status success --limit 20 \
+                   --json displayTitle,createdAt \
+                   --jq "map(select(.displayTitle == \"daily scan\" and .createdAt >= \"$since\")) | length")
+          if [ "$done" -gt 0 ]; then
+            echo "::notice::Today's scan already ran, so this late scheduled run stops here."
+            echo "scan=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "scan=true" >> "$GITHUB_OUTPUT"
+          fi
+
   scan:
+    needs: check
+    if: needs.check.outputs.scan == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
