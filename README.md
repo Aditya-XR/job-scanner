@@ -56,6 +56,10 @@ matched this way: it always gets its own row.
 4. **Under 1 year of experience:** the smallest "X years" requirement in the description is 0, or
    none is stated, or the title is intern/graduate/trainee. Mixed signals ("freshers welcome, 2+ years
    preferred") go to Gemini 3.5 Flash-Lite for a keep/drop call. Set `MAX_MIN_YEARS=1` to also keep "1+ years".
+   A mixed-signal job Gemini keeps is labelled **Stretch** (`Stretch: 2+ yrs`, orange): it asks for
+   experience you don't have yet but says it also considers freshers, so it's a long shot.
+
+Companies listed under `never_show` in [`companies.yaml`](companies.yaml) are skipped on every site.
 
 The same opening posted once per city in one run becomes one row listing every city. A job
 judged and dropped is remembered (hidden **Seen** tab) so it isn't re-checked daily.
@@ -125,6 +129,10 @@ Find which hiring system its careers page uses (the apply links usually show it:
 `jobs.smartrecruiters.com/<slug>`, `<tenant>.wd5.myworkdayjobs.com/<site>`), then add one line
 under that system in `companies.yaml`. Workday tenants live on different hosts (`wd1`, `wd5`,
 `wd12`, `wd504`...): copy it from a job link.
+
+To stop seeing a company's postings anywhere (a job board's mass poster, a staffing agency), add
+its name, as the sheet's Company column shows it, under `never_show` at the top of `companies.yaml`.
+Rows already in the sheet stay; mark them Skip.
 
 ## Secrets
 

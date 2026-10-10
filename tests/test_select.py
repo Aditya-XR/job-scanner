@@ -75,6 +75,46 @@ def test_same_opening_on_two_sites_is_one_row(fixed_today, stats, no_ai):
     assert set(new[0].all_ids) == {"gh:1", "unstop:1"}
 
 
+MIXED_JD = "Freshers welcome! 2+ years of experience in Java preferred."
+
+
+class FakeGemini:
+    def __init__(self, keep):
+        self.keep = keep
+
+    def available(self):
+        return True
+
+    def classify(self, title, description):
+        return self.keep, "open to freshers" if self.keep else "needs 2 years"
+
+
+def test_mixed_signals_kept_by_ai_are_labelled_stretch(fixed_today, stats):
+    new, _ = run([job("wd:1", desc=MIXED_JD)], stats, FakeGemini(keep=True))
+    assert new[0].experience == "Stretch: 2+ yrs" and new[0].why_kept == "AI: open to freshers"
+    new, dropped = run([job("wd:1", desc=MIXED_JD)], stats, FakeGemini(keep=False))
+    assert new == [] and [j.job_id for j in dropped] == ["wd:1"]
+
+
+def test_mixed_signals_without_ai_are_kept_as_stretch(fixed_today, stats, no_ai):
+    new, _ = run([job("wd:1", desc=MIXED_JD)], stats, no_ai)
+    assert new[0].experience == "Stretch: 2+ yrs" and new[0].why_kept.endswith("check the description")
+
+
+def test_clear_fresher_jobs_are_not_stretch(fixed_today, stats, no_ai):
+    new, _ = run([job("wd:1")], stats, no_ai)
+    assert new[0].experience == "0-1 yrs"
+
+
+def test_never_show_companies_are_skipped_on_every_site(fixed_today, stats, no_ai):
+    from jobscan.core import job_key
+    hide = {job_key("Webaxis Software Services", "")}
+    jobs = [job("in:1", company="WEBAXIS Software Services Pvt. Ltd.", source="Internshala"),
+            job("wd:1", company="Cisco")]
+    new, dropped = select(jobs, stats, Tracker([], [], date(2026, 10, 4)), gemini=no_ai, never_show=hide)
+    assert [j.job_id for j in new] == ["wd:1"] and dropped == []
+
+
 def test_filters_still_apply(fixed_today, stats, no_ai):
     jobs = [job("1", title="Senior Software Engineer"), job("2", loc="Austin, TX", source="Greenhouse"),
             job("3", title="Sales Engineer")]

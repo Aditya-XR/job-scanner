@@ -3,6 +3,10 @@
 # Verified live on 2026-10-02. Walmart, Wells Fargo, Qualcomm, NetApp, AMD, Synopsys, Dell and
 # Goldman Sachs added 2026-10-05 (most of them have moved off Workday).
 
+# Companies you never want to see, from any site (career feeds and job boards). Write the name
+# as the sheet's Company column shows it; case and endings like "Pvt. Ltd." don't matter.
+never_show: []
+
 greenhouse:          # boards-api.greenhouse.io/v1/boards/<slug>/jobs
   - {slug: okta, name: Okta}
   - {slug: databricks, name: Databricks}

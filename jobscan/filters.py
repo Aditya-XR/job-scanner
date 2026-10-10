@@ -58,6 +58,10 @@ def is_software(title: str) -> bool:
 
 # ---------- 4. Experience under 1 year ----------
 
+# Experience label of a job kept although its description asks for years of experience
+# (Gemini read it as open to freshers): "Stretch: 2+ yrs".
+STRETCH = "Stretch: "
+
 _WORD_NUM = {w: str(i) for i, w in enumerate(
     "zero one two three four five six seven eight nine ten eleven twelve".split())}
 _WORDS_RE = re.compile(r"\b(" + "|".join(_WORD_NUM) + r")\b(?=\s*(\(\d+\)\s*)?\+?\s*(-|–|to|or more|plus|\+)?\s*(\d+\s*)?(years?|yrs?))", re.I)

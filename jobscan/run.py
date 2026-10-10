@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import yaml
 
 from .core import IST, ROOT, fingerprint, job_key, today
-from .filters import Gemini, experience_check, is_india, is_software
+from .filters import STRETCH, Gemini, experience_check, is_india, is_software
 from .sources.boards import BOARDS, HOME_IP_ONLY
 from .sources.feeds import CUSTOM, READERS
 from .state import Tracker
@@ -38,6 +38,8 @@ def load_tasks(group="cloud", only=None):
     if "feeds" in parts:
         cfg = yaml.safe_load((ROOT / "companies.yaml").read_text(encoding="utf-8"))
         for system, entries in cfg.items():
+            if system == "never_show":
+                continue
             for c in entries or []:
                 reader = READERS.get(system) or CUSTOM.get(c.get("reader", ""))
                 if reader and (not only or c["name"].lower() in only or c.get("slug", c.get("tenant", "")) in only):
@@ -47,6 +49,12 @@ def load_tasks(group="cloud", only=None):
         if wanted in parts and (not only or name.lower() in only):
             tasks.append((name, reader, {"name": name}))
     return tasks
+
+
+def load_never_show():
+    """Companies listed under never_show in companies.yaml, as job_key() names them."""
+    cfg = yaml.safe_load((ROOT / "companies.yaml").read_text(encoding="utf-8"))
+    return {job_key(name, "") for name in cfg.get("never_show") or []}
 
 
 def new_stats(fetched=0, error="", complete=False):
@@ -96,7 +104,7 @@ def fetch_all(tasks):
     return jobs, stats
 
 
-def select(jobs, stats, tracker: Tracker, gemini=None):
+def select(jobs, stats, tracker: Tracker, gemini=None, never_show=frozenset()):
     """Apply the checks to postings the sheet doesn't know yet.
     Returns (rows to add newest first, jobs dropped on experience)."""
     cutoff = today() - timedelta(days=MAX_AGE_DAYS)
@@ -107,6 +115,9 @@ def select(jobs, stats, tracker: Tracker, gemini=None):
         if not (is_india(j.location) or j.source in ("Workday", "SmartRecruiters")):
             continue
         if not is_software(j.title):
+            continue
+        if job_key(j.company, "") in never_show:
+            status_counts["never show"] += 1
             continue
         stats[j.feed]["matched"] += 1
         status = tracker.status_of(j.job_id)
@@ -122,8 +133,9 @@ def select(jobs, stats, tracker: Tracker, gemini=None):
         j.reposted = status == "reposted"
         candidates.append(j)
     log.info("India + software postings: %d already in the sheet, %d judged and dropped before, "
-             "%d already in the sheet from another site, %d new, %d reposted", status_counts["known"],
-             status_counts["dropped"], status_counts["elsewhere"], status_counts["new"], status_counts["reposted"])
+             "%d already in the sheet from another site, %d new, %d reposted, %d from never_show companies",
+             status_counts["known"], status_counts["dropped"], status_counts["elsewhere"], status_counts["new"],
+             status_counts["reposted"], status_counts["never show"])
 
     # Load descriptions only for the survivors, in parallel.
     t0 = time.monotonic()
@@ -160,6 +172,8 @@ def select(jobs, stats, tracker: Tracker, gemini=None):
                 decision, reason = "keep", f"{reason}; check the description"
             else:
                 decision, reason = ("keep" if verdict[0] else "drop"), f"AI: {verdict[1]}"
+            # The description asks for years of experience but also invites freshers: a long shot.
+            label = f"{STRETCH}{label}"
         if decision != "keep":
             dropped.append(j)
             continue
@@ -247,7 +261,7 @@ def main(argv=None):
             log.info("Sheet layout: %s", action)
         tracker = sheet.tracker()
 
-    new, dropped = select(jobs, stats, tracker)
+    new, dropped = select(jobs, stats, tracker, never_show=load_never_show())
     log.info("\n%d jobs fetched, %d India + software, %d new rows",
              len(jobs), sum(s["matched"] for s in stats.values()), len(new))
     if args.dry_run:

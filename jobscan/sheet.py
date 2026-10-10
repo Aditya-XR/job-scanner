@@ -6,6 +6,7 @@ from datetime import timedelta
 import gspread
 
 from .core import ROOT, env, fingerprint, posting_id, today
+from .filters import STRETCH
 from .sources.boards import BOARDS
 from .state import Row, Tracker
 
@@ -182,6 +183,11 @@ class Sheet:
                 "ranges": [rows(COL["Experience"], COL["Experience"] + 1)],
                 "booleanRule": {"condition": {"type": "TEXT_EQ", "values": [{"userEnteredValue": "Not mentioned"}]},
                                 "format": {"backgroundColor": {"red": 1, "green": .95, "blue": .7}}}}}},
+            # Orange: asks for years of experience but invites freshers too, a long shot
+            {"addConditionalFormatRule": {"index": 0, "rule": {
+                "ranges": [rows(COL["Experience"], COL["Experience"] + 1)],
+                "booleanRule": {"condition": {"type": "TEXT_STARTS_WITH", "values": [{"userEnteredValue": STRETCH}]},
+                                "format": {"backgroundColor": {"red": .99, "green": .85, "blue": .7}}}}}},
             # Grey, struck-through title: the posting has been taken down
             {"addConditionalFormatRule": {"index": 0, "rule": {
                 "ranges": [rows(COL["Title"], COL["Title"] + 1)],
