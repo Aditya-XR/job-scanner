@@ -22,7 +22,7 @@ on:
 permissions:
   contents: read
 
-# The sheet has one writer at a time (a later laptop run for LinkedIn etc. joins this group).
+# One GitHub run at a time; the sheet's Lock tab also keeps the laptop's run out (jobscan/sheet.py).
 concurrency:
   group: jobscan-sheet
   cancel-in-progress: false
@@ -58,7 +58,7 @@ jobs:
     needs: check
     if: needs.check.outputs.scan == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45   # may wait up to 20 for a laptop run to release the sheet
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

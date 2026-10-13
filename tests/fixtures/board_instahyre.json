@@ -1,0 +1,70 @@
+{
+ "listing": {
+  "meta": {
+   "total_count": 3
+  },
+  "objects": [
+   {
+    "id": 435353,
+    "title": "DevOps Engineer",
+    "candidate_title": "DevOps Engineer",
+    "locations": "Bangalore",
+    "public_url": "https://www.instahyre.com/job-435353-devops-engineer-at-piramal-finance-limited-bangalore/",
+    "employer": {
+     "resource_uri": "/api/v1/candidate_opportunity_employer/31030",
+     "profile_image_src": "https://media.instahyre.com/images/profile/base/employer/31030/6c0d5a59d2/Piramal_Finance_Logo_-_512x512.webp",
+     "id": 31030,
+     "company_name": "Piramal Finance Limited",
+     "company_tagline": "Hum Kaagaz Se Zyaada Neeyat Dekhte Hain",
+     "company_founded": 2017,
+     "employee_count": 1000,
+     "instahyre_note": "Piramal Capital and Housing Finance is a wholly-owned subsidiary of Piramal Group that provides both wholesale and retail funding opportunities across sectors, which includes loans and corporate financing. ",
+     "show_diversity_employer_icon": false,
+     "show_featured_employer_icon": false
+    }
+   },
+   {
+    "id": 445794,
+    "title": "Software Engineer",
+    "candidate_title": "Software Engineer",
+    "locations": "Bangalore",
+    "public_url": "https://www.instahyre.com/job-445794-software-engineer-at-kulfi-bangalore/",
+    "employer": {
+     "resource_uri": "/api/v1/candidate_opportunity_employer/56241",
+     "profile_image_src": "https://media.instahyre.com/images/profile/base/employer/56241/25dbc42002/drivemo_co_logo.webp",
+     "id": 56241,
+     "company_name": "Kulfi",
+     "company_tagline": "A couples only app",
+     "company_founded": 2024,
+     "employee_count": 1,
+     "instahyre_note": "Kulfi is a couples-only mobile platform designed to help partners connect, engage in shared activities, play games, complete bucket lists, and create meaningful digital memories together. ",
+     "show_diversity_employer_icon": false,
+     "show_featured_employer_icon": false
+    }
+   },
+   {
+    "id": 446392,
+    "title": "Business Development Executive",
+    "candidate_title": "Business Development Executive",
+    "locations": "Delhi",
+    "public_url": "https://www.instahyre.com/job-446392-business-development-executive-at-extrovert-information-technology-delhi/",
+    "employer": {
+     "resource_uri": "/api/v1/candidate_opportunity_employer/36265",
+     "profile_image_src": "https://media.instahyre.com/images/profile/base/employer/36265/f25e307728/277680082_365085032300153_6594718899572336312.webp",
+     "id": 36265,
+     "company_name": "Extrovert Information Technology",
+     "company_tagline": "We transform your dreams into reality with our digital solutions",
+     "company_founded": 2009,
+     "employee_count": 50,
+     "instahyre_note": "Extrovert Information Technology is a software development and IT solutions provider that helps a wide range of industries by offering web design, mobile and app development, and end-to-end digital solutions. ",
+     "show_diversity_employer_icon": false,
+     "show_featured_employer_icon": false
+    }
+   }
+  ]
+ },
+ "pages": {
+  "https://www.instahyre.com/job-435353-devops-engineer-at-piramal-finance-limited-bangalore/": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"JobPosting\", \"employmentType\": \"FULL_TIME\", \"identifier\": {\"@type\": \"PropertyValue\", \"name\": \"Piramal Finance Limited\", \"value\": \"job-435353-devops-engineer-at-piramal-finance-limited-bangalore\"}, \"jobLocation\": [{\"@type\": \"Place\", \"address\": {\"@type\": \"PostalAddress\", \"addressRegion\": \"Karnataka\", \"addressLocality\": \"Bangalore\", \"addressCountry\": \"India\", \"streetAddress\": \"Bangalore\"}}], \"title\": \"DevOps Engineer\", \"description\": \"<html><body><p><strong>Requirements: </strong></p><ul><li>1-3 years' experience managing DevOps for large engineering teams developing cloud-native software.</li><li>In-depth knowledge of AWS and cloud architectures/services.</li><li>Experience within the container and container orchestration space (Docker, Kubernetes).</li><li>Passion for CI/CD pipeline using tools such as Jenkins, GitLab Runners, etc.</li><li>Familiarity with config management tools like Ansible, Terraform, etc.</li><li>Proven record of measuring and improving DevOps metrics.</li><li>Familiarity with observability tools and \", \"hiringOrganization\": {\"@type\": \"Organization\", \"name\": \"Piramal Finance Limited\", \"logo\": \"https://media.instahyre.com/images/profile/base/employer/31030/6c0d5a59d2/Piramal_Finance_Logo_-_512x512.webp\", \"sameAs\": \"https://www.piramalfinance.com/\"}, \"datePosted\": \"2026-07-27\"}</script>",
+  "https://www.instahyre.com/job-445794-software-engineer-at-kulfi-bangalore/": "<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"JobPosting\", \"employmentType\": \"FULL_TIME\", \"identifier\": {\"@type\": \"PropertyValue\", \"name\": \"Kulfi\", \"value\": \"job-445794-software-engineer-at-kulfi-bangalore\"}, \"jobLocation\": [{\"@type\": \"Place\", \"address\": {\"@type\": \"PostalAddress\", \"addressRegion\": \"Karnataka\", \"addressLocality\": \"Bangalore\", \"addressCountry\": \"India\", \"streetAddress\": \"Bangalore\"}}], \"title\": \"Software Engineer\", \"description\": \"<html><body><p><strong>Responsibilities: </strong></p><ul><li>Design, build, and operate backend services, APIs, data models, and asynchronous workflows.</li><li>Own reliability through tests, observability, alerts, migrations, safe rollouts, rollback plans, and incident follow-through.</li><li>Debug production behaviour across client, network, services, cache/queues, and data using evidence.</li><li>Make pragmatic architecture decisions for current scale while preserving a credible path to growth.</li><li>Protect sensitive couple data through appropriate authentication, authorisation, validat\", \"hiringOrganization\": {\"@type\": \"Organization\", \"name\": \"Kulfi\", \"logo\": \"https://media.instahyre.com/images/profile/base/employer/56241/25dbc42002/drivemo_co_logo.webp\", \"sameAs\": \"http://klfi.cc\"}, \"datePosted\": \"2026-10-06\"}</script>"
+ }
+}

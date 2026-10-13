@@ -1,0 +1,77 @@
+{
+ "noOfJobs": 3,
+ "jobDetails": [
+  {
+   "jobId": "080426034452",
+   "title": "SDE -2",
+   "companyName": "Deloitte US-India Offices",
+   "jdURL": "/job-listings-sde-2-deloitte-us-india-offices-bengaluru-delhi-ncr-mumbai-all-areas-0-to-5-years-080426034452",
+   "createdDate": 1791805996024,
+   "minimumExperience": "0",
+   "maximumExperience": "5",
+   "placeholders": [
+    {
+     "type": "experience",
+     "label": "0-5 Yrs"
+    },
+    {
+     "type": "salary",
+     "label": "Not disclosed"
+    },
+    {
+     "type": "location",
+     "label": "Bengaluru, Delhi / NCR, Mumbai (All Areas)"
+    }
+   ],
+   "jobDescription": "<p> About the Role</p><p>We are looking for a passionate <strong>Software Development Engineer (SDE)</strong> to design, develop, and maintain scalable software solutions. The ideal candidate should have strong problem-solving skills, a solid foundation in data structures & algorithms, and experience in building high-quality applications.</p><p> Key Responsibilities</p><ul><li>Design, develop, test, and deploy scalable software applications </li><li>Write clean, maintainable, and efficient code </li><li>Work on <strong>frontend, backend, or full-stack development</strong> based on project need"
+  },
+  {
+   "jobId": "121026502633",
+   "title": "Software Engineer",
+   "companyName": "Cisco",
+   "jdURL": "/job-listings-software-engineer-cisco-bengaluru-0-to-2-years-121026502633",
+   "createdDate": 1791807209000,
+   "minimumExperience": "0",
+   "maximumExperience": "2",
+   "placeholders": [
+    {
+     "type": "experience",
+     "label": "0-2 Yrs"
+    },
+    {
+     "type": "salary",
+     "label": "Not disclosed"
+    },
+    {
+     "type": "location",
+     "label": "Bengaluru"
+    }
+   ],
+   "jobDescription": "Bachelors (0 to 2 years experience) or Masters degree in Computer Science or related field (0 years of experience).  <br><br>Minimum Qualifications<br><br>Preferred Qualifications"
+  },
+  {
+   "jobId": "111026004601",
+   "title": "Fullstack Developer",
+   "companyName": "Aon",
+   "jdURL": "/job-listings-fullstack-developer-aon-bengaluru-0-to-3-years-111026004601",
+   "createdDate": 1791730079242,
+   "minimumExperience": "0",
+   "maximumExperience": "3",
+   "placeholders": [
+    {
+     "type": "experience",
+     "label": "0-3 Yrs"
+    },
+    {
+     "type": "salary",
+     "label": "Not disclosed"
+    },
+    {
+     "type": "location",
+     "label": "Hybrid - Bengaluru"
+    }
+   ],
+   "jobDescription": "Position type- Full Time . Work Location- Bangalore. <br><br>Shift Time - 12:30 pm- 9:30 pm . People Manager role: No. <br><br>Internship experience,product development projects,coding competitions,or open-source contributions<br><br>Required education and certifications critical for the role- B-Tech Graduate or Post-Graduate in relevant field (full-time). <br><br>Preferred Skills"
+  }
+ ]
+}

@@ -5,9 +5,9 @@ Every morning, collect new **software jobs in India that need less than 1 year o
 a direct apply link.
 
 ```
-company career feeds ─┐
-open job boards ──────┼─> normalize ─> new? ─> India/remote? ─> software role? ─> < 1 yr exp? ─> Google Sheet ─> Gmail summary
-guarded job boards ───┘                                                          (Gemini for unclear JDs)
+company career feeds ──┐
+open job boards ───────┼─> normalize ─> new? ─> India/remote? ─> software role? ─> < 1 yr exp? ─> Google Sheet ─> Gmail summary
+laptop-only job boards ┘                                                          (Gemini for unclear JDs)
 ```
 
 ## What it reads
@@ -15,14 +15,15 @@ guarded job boards ───┘                                                 
 | Group | Sources | Status |
 |---|---|---|
 | Company career feeds | 73 companies through Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Eightfold, Jibe, Radancy and Oracle career sites, plus Amazon's and Goldman Sachs' own APIs (see [`companies.yaml`](companies.yaml)) | ✅ daily |
-| Open job boards | Unstop, Internshala, Hirist, Cutshort (see [`boards.py`](jobscan/sources/boards.py)) | ✅ daily |
-| Open job boards that block GitHub's servers | Foundit (`python -m jobscan --group laptop`) | ✅ from your laptop |
-| Guarded job boards | LinkedIn, Naukri, Indeed, Wellfound, Instahyre (run from a laptop with a real browser) | planned |
+| Open job boards | Unstop, Internshala, Hirist, Cutshort, Instahyre, Wellfound (see [`boards.py`](jobscan/sources/boards.py)) | ✅ daily |
+| Laptop-only job boards | LinkedIn, Naukri, Foundit (`python -m jobscan --group laptop`) | ✅ daily from your laptop |
+| Not read | Indeed: its Cloudflare check never clears for an automated browser, and getting past it would mean disguising the browser | ✗ |
 
 Every morning at about 07:20 IST, GitHub Actions ([`daily.yml`](.github/workflows/daily.yml)) reads
 the company feeds and the open job boards, updates the sheet and sends the Gmail summary. Your
-laptop doesn't need to be on. Foundit's bot protection answers 403 to GitHub's servers, so it is
-read from your laptop (`--group laptop`), like the guarded boards will be.
+laptop doesn't need to be on. The laptop-only boards are read by a second run at 08:30 from your
+laptop (see **Laptop run** below): Foundit answers 403 to GitHub's servers, LinkedIn rate-limits
+shared IPs hard, and Naukri answers only a real browser window.
 
 GitHub's own schedule has been starting runs 3-10 hours late, so the run is started by a time
 trigger in the sheet's Apps Script ([`start_scan.gs`](apps_script/start_scan.gs)), which GitHub
@@ -38,6 +39,10 @@ succeeded yet that day (IST), so a missed or failed morning run still happens, j
 | Hirist | every job in the software categories with a 0-1 year range | yes |
 | Cutshort | every posting from the last 10 days with a minimum of 0-1 years | no (window) |
 | Foundit (laptop) | software/developer searches, 0-1 years, posted in the last 2 days | no (window) |
+| LinkedIn (laptop) | 5 searches (software engineer/developer, frontend, backend, full stack), up to 3 pages each, Internship + Entry level, India, last 2 days, through the public guest search: no login | no (window) |
+| Naukri (laptop) | 12 searches (software engineer/developer, SDE, frontend, backend, full stack, Java, Python, React, Node.js, Android, QA automation), first page each, 0 years, last 2 days, in a visible Chrome window | no (window) |
+| Instahyre | the whole 0-years listing; software titles only, each job page read for its date | yes |
+| Wellfound | 5 role pages for India (software, frontend, backend, full-stack, mobile engineer), up to 5 pages each; 2+ year listings skipped | no (window) |
 
 A board's own experience range is written at the top of the description, where the normal
 experience check reads it. Boards re-list jobs from company sites under their own IDs, so a
@@ -110,12 +115,33 @@ shared with it as Editor, a Gemini API key, and a Gmail app password. See `.env.
 If the token expires, the trigger fails (Google emails you) and the late backup run takes over
 until you paste in a new token.
 
+### Laptop run
+
+LinkedIn, Naukri and Foundit are read from your laptop by a scheduled task:
+
+```powershell
+.venv\Scripts\pip install -r requirements-laptop.txt                 # Playwright, for Naukri
+powershell -ExecutionPolicy Bypass -File laptop\install_task.ps1      # daily at 08:30 (-At 09:00 to change)
+```
+
+The task runs at 08:30, or as soon as the laptop is on after a missed 08:30, while you are logged
+in: Naukri opens a Chrome window for about a minute (it refuses headless browsers). Each run
+writes `logs\laptop-<date>.log`, and its Gmail summary says "run: laptop". The sheet takes one
+writer at a time through a hidden **Lock** tab, so the laptop run and GitHub's run never write
+over each other: whichever comes second waits.
+
+LinkedIn's public search allows one connection only about 20 requests an hour. The searches
+come first; descriptions are read with what is left, and a job whose description LinkedIn
+refused is still added, as **Not mentioned** with "description not available" (check the years
+on LinkedIn; it has already passed LinkedIn's own entry-level filter). Naukri serves only the
+first 20 results of each search, so it runs 12 narrow searches instead.
+
 ## Run
 
 ```bash
 python -m jobscan --dry-run          # print what would be added
 python -m jobscan                    # update the sheet and send the email
-python -m jobscan --group laptop     # boards that block GitHub's servers (Foundit)
+python -m jobscan --group laptop     # LinkedIn, Naukri, Foundit (the scheduled task)
 python -m jobscan --group boards     # every job board (--group feeds: only company sites)
 python -m jobscan --only meesho,nvidia,unstop --dry-run
 python -m jobscan.audit              # live check that every posting has a unique ID

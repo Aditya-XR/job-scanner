@@ -16,9 +16,9 @@ from datetime import timedelta
 import requests
 from bs4 import BeautifulSoup
 
-from ..core import (Job, Throttle, get_json, get_text, html_to_text, json_ld_description, parse_date,
-                    posting_id, today)
-from ..filters import is_india
+from ..core import (HTTP, Job, Throttle, get_json, get_text, html_to_text, json_ld_description, json_ld_posting,
+                    parse_date, posting_id, today)
+from ..filters import is_india, is_software
 
 REMOTE = "Remote (India)"
 _VAGUE_PLACE = re.compile(r"remote|work from home|wfh|anywhere|multiple|pan india|^others?$", re.I)
@@ -333,6 +333,205 @@ def cutshort(c):
     return jobs, False   # a window of recent days, never the whole board
 
 
+# ---------- LinkedIn (public guest search, no login) ----------
+
+LINKEDIN = "https://www.linkedin.com"
+LINKEDIN_SEARCH = f"{LINKEDIN}/jobs-guest/jobs/api/seeMoreJobPostings/search"
+LINKEDIN_QUERIES = ("software engineer", "software developer", "frontend developer", "backend developer",
+                    "full stack developer")
+# LinkedIn's own filters: India, Internship + Entry level, posted in the last 2 days (a daily run,
+# plus a missed day). The title and experience checks still apply on top.
+LINKEDIN_FILTERS = {"location": "India", "geoId": "102713980", "f_E": "1,2", "f_TPR": "r172800"}
+LINKEDIN_PAGES = 3        # 10 cards a page
+# The guest search allows one connection only ~20 requests an hour, then answers 429 for a
+# while. Requests are spaced out and never retried (retries only lengthen the block), and the
+# searches come first: descriptions are read with whatever is left.
+_LINKEDIN = Throttle(6)
+_LINKEDIN_HTTP = requests.Session()
+_LINKEDIN_HTTP.headers.update({"User-Agent": HTTP.headers["User-Agent"], "Accept": "text/html"})
+
+
+class _RateLimited(Exception):
+    pass
+
+
+_linkedin_limited = False     # set by the first 429: no more LinkedIn requests this run
+
+
+def _linkedin_get(url, **kw):
+    global _linkedin_limited
+    if _linkedin_limited:
+        raise _RateLimited()
+    _LINKEDIN.wait()
+    r = _LINKEDIN_HTTP.get(url, timeout=20, **kw)
+    if r.status_code in (429, 999):       # 999: LinkedIn's "go away" for suspected bots
+        _linkedin_limited = True
+        raise _RateLimited()
+    r.raise_for_status()
+    return r.text
+
+
+def linkedin(c):
+    """Five searches with LinkedIn's India, entry-level and last-2-days filters. A rate limit
+    ends the read with what was found so far; only a limit before any job is an error."""
+    global _linkedin_limited
+    _linkedin_limited = False
+    jobs, ids = [], set()
+    try:
+        for query in LINKEDIN_QUERIES:
+            for page in range(LINKEDIN_PAGES):
+                cards = BeautifulSoup(_linkedin_get(LINKEDIN_SEARCH, params={
+                    "keywords": query, **LINKEDIN_FILTERS, "start": page * 10}), "html.parser").select("li")
+                new = 0
+                for card in cards:
+                    job = _linkedin_card(card)
+                    if job and job.job_id not in ids:
+                        ids.add(job.job_id)
+                        jobs.append(job)
+                        new += 1
+                if len(cards) < 10 or not new:
+                    break
+    except _RateLimited:
+        if not jobs:
+            raise RuntimeError("LinkedIn is rate-limiting this connection (HTTP 429)") from None
+    return jobs, False   # a window of recent days, never the whole board
+
+
+def _linkedin_card(card):
+    base = card.select_one("[data-entity-urn]")
+    if not base:
+        return None
+    native = base["data-entity-urn"].rsplit(":", 1)[-1]
+    text = lambda sel: card.select_one(sel).get_text(" ", strip=True) if card.select_one(sel) else ""
+    company, title = text(".base-search-card__subtitle"), text(".base-search-card__title")
+    place = _place([text(".job-search-card__location")])
+    if place is None:
+        return None
+    when = card.select_one("time[datetime]")
+    url = f"{LINKEDIN}/jobs/view/{native}/"
+    jid, fb = posting_id("linkedin", "", native, url, company, title)
+    return Job("LinkedIn", company, title, place, url, job_id=jid, id_fallback=fb,
+               posted=parse_date(when["datetime"]) if when else None,
+               load_description=_linkedin_description(native))
+
+
+def _linkedin_description(native):
+    def load():
+        try:
+            page = BeautifulSoup(_linkedin_get(f"{LINKEDIN}/jobs-guest/jobs/api/jobPosting/{native}"), "html.parser")
+        except _RateLimited:
+            return ""   # kept as "description not available": LinkedIn already filtered for entry level
+        level = next((li.select_one("span").get_text(strip=True) for li in page.select(".description__job-criteria-item")
+                      if "seniority" in li.get_text(" ", strip=True).lower() and li.select_one("span")), "")
+        body = page.select_one(".show-more-less-html__markup")
+        return (f"LinkedIn seniority level: {level}\n" if level else "") + (body.get_text("\n", strip=True) if body else "")
+    return load
+
+
+# ---------- Instahyre ----------
+
+INSTAHYRE = "https://www.instahyre.com"
+INSTAHYRE_PAGE = 20       # the API's maximum
+_INSTAHYRE = Throttle(0.5)
+
+
+def instahyre(c):
+    """Instahyre's listing for 0 years of experience. It is mostly sales jobs and carries no
+    dates, so only software titles are kept here, and each one's public page is read for the
+    posting date and description it embeds for Google Jobs (old postings stay listed for months)."""
+    jobs, ids, offset, total = [], set(), 0, 0
+    while offset < 3000:
+        data = get_json(f"{INSTAHYRE}/api/v1/job_search?company_size=0&isLandingPage=true&job_type=0&years=0"
+                        f"&limit={INSTAHYRE_PAGE}&offset={offset}")
+        total = (data.get("meta") or {}).get("total_count", total)
+        batch = data.get("objects") or []
+        for x in batch:
+            if x.get("id") in ids:
+                continue
+            ids.add(x.get("id"))
+            title = x.get("title") or x.get("candidate_title") or ""
+            place = _place((x.get("locations") or "").split(","))
+            if not is_software(title) or place is None:
+                continue
+            company = (x.get("employer") or {}).get("company_name", "")
+            url = x.get("public_url") or ""
+            posting = _instahyre_posting(url) if url else {}
+            jid, fb = posting_id("instahyre", "", x.get("id"), url, company, title)
+            jobs.append(Job("Instahyre", company, title, place, url, job_id=jid, id_fallback=fb,
+                            posted=parse_date(posting.get("datePosted")),
+                            description="Instahyre lists this job for 0 years of experience.\n"
+                                        + html_to_text(posting.get("description", ""))))
+        offset += INSTAHYRE_PAGE
+        if not batch or offset >= total:
+            break
+    return jobs, len(ids) >= total
+
+
+def _instahyre_posting(url):
+    _INSTAHYRE.wait()
+    try:
+        return json_ld_posting(get_text(url, headers={"Accept": "text/html"}))
+    except requests.RequestException:
+        return {}   # no date: the job is kept, and its link shows the rest
+
+
+# ---------- Wellfound (startups) ----------
+
+WELLFOUND = "https://wellfound.com"
+WELLFOUND_ROLES = ("software-engineer", "frontend-engineer", "backend-engineer", "full-stack-engineer",
+                   "mobile-engineer")
+WELLFOUND_PAGES = 5
+_WELLFOUND = Throttle(2)
+
+
+def wellfound(c):
+    """Each role's India page embeds its listings, descriptions included, in the page's own
+    data (Next.js apolloState). Listings asking for 2+ years are skipped, as on Cutshort."""
+    jobs, ids = [], set()
+    for role in WELLFOUND_ROLES:
+        for page in range(1, WELLFOUND_PAGES + 1):
+            _WELLFOUND.wait()
+            state = _apollo_state(get_text(f"{WELLFOUND}/role/l/{role}/india" + (f"?page={page}" if page > 1 else ""),
+                                           headers={"Accept": "text/html"}))
+            company_of = {ref["__ref"]: s.get("name", "") for s in state.values()
+                          if isinstance(s, dict) and s.get("__typename") == "StartupResult"
+                          for ref in s.get("highlightedJobListings") or []}
+            new = 0
+            for key, x in state.items():
+                if not isinstance(x, dict) or x.get("__typename") != "JobListingSearchResult" or x.get("id") in ids:
+                    continue
+                ids.add(x.get("id"))
+                new += 1
+                job = _wellfound_job(x, company_of.get(key, ""))
+                if job:
+                    jobs.append(job)
+            if not new:
+                break
+    return jobs, False
+
+
+def _apollo_state(page_html):
+    data = BeautifulSoup(page_html, "html.parser").select_one("script#__NEXT_DATA__")
+    if not data:
+        raise RuntimeError("page has no __NEXT_DATA__ (blocked, or Wellfound changed its pages)")
+    return ((json.loads(data.get_text()).get("props") or {}).get("pageProps") or {}).get("apolloState", {}).get("data", {})
+
+
+def _wellfound_job(x, company):
+    lo, hi = x.get("yearsExperienceMin"), x.get("yearsExperienceMax")
+    if (lo is not None and lo > 1) or x.get("jobType") == "cofounder":
+        return None
+    indian = [n for n in x.get("locationNames") or [] if is_india(n)]
+    place = ", ".join(indian) if indian else (REMOTE if x.get("remote") else None)
+    if place is None:
+        return None
+    url = f"{WELLFOUND}/jobs/{x['id']}-{x.get('slug', '')}" if x.get("id") else ""
+    jid, fb = posting_id("wellfound", "", x.get("id"), url, company, x.get("title"))
+    return Job("Wellfound", company, x.get("title", ""), place, url, job_id=jid, id_fallback=fb,
+               posted=parse_date(x.get("liveStartAt")),
+               description=_years(lo, hi) + html_to_text(x.get("description") or ""))
+
+
 def _keeping(head, load):
     """A failed detail request still leaves what the listing said about experience."""
     def safe():
@@ -343,7 +542,14 @@ def _keeping(head, load):
     return safe
 
 
-BOARDS = {"Unstop": unstop, "Internshala": internshala, "Hirist": hirist, "Cutshort": cutshort, "Foundit": foundit}
-# Answer 403 to GitHub's servers (bot protection that blocks datacenter IPs), so they are read
-# from the laptop instead: the "laptop" run group.
-HOME_IP_ONLY = {"Foundit"}
+def _naukri(c):
+    from .browser import naukri   # needs Playwright: a laptop-only dependency
+    return naukri(c)
+
+
+BOARDS = {"Unstop": unstop, "Internshala": internshala, "Hirist": hirist, "Cutshort": cutshort, "Foundit": foundit,
+          "LinkedIn": linkedin, "Naukri": _naukri, "Instahyre": instahyre, "Wellfound": wellfound}
+# Read from the laptop (the "laptop" run group), not GitHub's servers: Foundit answers 403 to
+# datacenter IPs, LinkedIn answers 429 to GitHub's shared IPs from the first request (tested
+# 2026-10-13), and Naukri needs a real browser window. Instahyre and Wellfound work from GitHub.
+HOME_IP_ONLY = {"Foundit", "LinkedIn", "Naukri"}

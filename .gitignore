@@ -12,3 +12,6 @@ state/
 
 # Local sheet snapshots
 backups/
+
+# Laptop run logs
+logs/

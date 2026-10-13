@@ -9,6 +9,7 @@
 import argparse
 import hashlib
 import logging
+import platform
 import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -250,25 +251,31 @@ def main(argv=None):
     log.info("Reading %d sources...", len(tasks))
     jobs, stats = fetch_all(tasks)
 
-    sheet = None
     if args.dry_run:
-        tracker = Tracker([], [], today())
-    else:
-        from .sheet import Sheet
-        sheet = Sheet()
-        action = sheet.prepare(jobs)
-        if action != "ok":
-            log.info("Sheet layout: %s", action)
-        tracker = sheet.tracker()
-
-    new, dropped = select(jobs, stats, tracker, never_show=load_never_show())
-    log.info("\n%d jobs fetched, %d India + software, %d new rows",
-             len(jobs), sum(s["matched"] for s in stats.values()), len(new))
-    if args.dry_run:
+        new, _ = select(jobs, stats, Tracker([], [], today()), never_show=load_never_show())
+        log.info("\n%d jobs fetched, %d India + software, %d new rows",
+                 len(jobs), sum(s["matched"] for s in stats.values()), len(new))
         for j in new:
             log.info("  %-11s | %-14s | %-50s | %-13s | %s", j.source[:11], j.company[:14], j.title[:50],
                      j.experience, j.why_kept)
         return
+
+    from .sheet import Sheet
+    sheet = Sheet()
+    # GitHub's runs and the laptop's both rewrite the sheet by row number: one at a time.
+    with sheet.lock(f"{args.group} run on {platform.node()}"):
+        update_sheet(sheet, args, jobs, stats)
+
+
+def update_sheet(sheet, args, jobs, stats):
+    action = sheet.prepare(jobs)
+    if action != "ok":
+        log.info("Sheet layout: %s", action)
+    tracker = sheet.tracker()
+
+    new, dropped = select(jobs, stats, tracker, never_show=load_never_show())
+    log.info("\n%d jobs fetched, %d India + software, %d new rows",
+             len(jobs), sum(s["matched"] for s in stats.values()), len(new))
 
     # With --only, sources outside the selection weren't read: their rows must not be closed.
     complete = {n for n, s in stats.items() if s["complete"]}
@@ -298,7 +305,6 @@ def main(argv=None):
                             closed_rows=closed, id_problems=id_problems, copies=copies)
         log.info("Summary email %s", "sent" if sent else "skipped (Gmail not configured)")
     log.info("Done: %d new rows in %s", len(new), sheet.url)
-
 
 if __name__ == "__main__":
     main()

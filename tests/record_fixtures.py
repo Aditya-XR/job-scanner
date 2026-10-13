@@ -157,3 +157,67 @@ keep = ("_id", "headline", "publicUrl", "locations", "remoteType", "expRange", "
         "jobFactSummary", "sanitizedComment")
 save("board_cutshort.json", {"data": {"pageData": {"jobs": [
     {k: (x.get(k)[:CUT] if isinstance(x.get(k), str) else x.get(k)) for k in keep} for x in pick]}}})
+
+# ---------- added 2026-10-13: laptop boards (Phase 3) ----------
+
+import re  # noqa: E402
+
+from jobscan.core import get_text, json_ld_posting  # noqa: E402
+from jobscan.filters import is_software  # noqa: E402
+
+ih = get_json(f"{boards.INSTAHYRE}/api/v1/job_search?company_size=0&isLandingPage=true&job_type=0&years=0"
+              "&limit=20&offset=0")
+soft = [x for x in ih["objects"] if is_software(x["title"])][:2]
+other = [x for x in ih["objects"] if not is_software(x["title"])][:1]
+pages = {}
+for x in soft:
+    ld = json_ld_posting(get_text(x["public_url"], headers={"Accept": "text/html"}))
+    ld["description"] = (ld.get("description") or "")[:CUT]
+    pages[x["public_url"]] = f'<script type="application/ld+json">{json.dumps(ld)}</script>'
+keep = ("id", "title", "candidate_title", "locations", "public_url", "employer")
+save("board_instahyre.json", {"listing": {"meta": {"total_count": 3},
+                                          "objects": [{k: x.get(k) for k in keep} for x in soft + other]},
+                              "pages": pages})
+
+wf = get_text(f"{boards.WELLFOUND}/role/l/software-engineer/india", headers={"Accept": "text/html"})
+state = boards._apollo_state(wf)
+listings = {k: v for k, v in state.items() if isinstance(v, dict) and v.get("__typename") == "JobListingSearchResult"}
+fresher = [k for k, v in listings.items() if (v.get("yearsExperienceMin") or 0) <= 1
+           and any(re.search("bangalore|bengaluru|pune|noida|gurgaon|hyderabad|mumbai|chennai|delhi", n, re.I)
+                   for n in v.get("locationNames") or [])][:2]
+senior = [k for k, v in listings.items() if (v.get("yearsExperienceMin") or 0) > 1][:1]
+picked = {k: dict(listings[k], description=(listings[k].get("description") or "")[:CUT]) for k in fresher + senior}
+startups = {k: dict(v, highlightedJobListings=[r for r in v.get("highlightedJobListings") or [] if r["__ref"] in picked])
+            for k, v in state.items() if isinstance(v, dict) and v.get("__typename") == "StartupResult"
+            and any(r["__ref"] in picked for r in v.get("highlightedJobListings") or [])}
+next_data = {"props": {"pageProps": {"apolloState": {"data": {**startups, **picked}}}}}
+save("board_wellfound.json", {"page": f'<script id="__NEXT_DATA__" type="application/json">{json.dumps(next_data)}</script>'})
+
+# LinkedIn rate-limits hard: record it on its own, a few requests, spaced out.
+li_search = get_text(boards.LINKEDIN_SEARCH, params={"keywords": "software engineer", **boards.LINKEDIN_FILTERS,
+                                                     "start": 0}, headers={"Accept": "text/html"})
+cards = BeautifulSoup(li_search, "html.parser").select("li")[:3]
+native = cards[0].select_one("[data-entity-urn]")["data-entity-urn"].rsplit(":", 1)[-1]
+__import__("time").sleep(5)
+li_post = BeautifulSoup(get_text(f"{boards.LINKEDIN}/jobs-guest/jobs/api/jobPosting/{native}",
+                                 headers={"Accept": "text/html"}), "html.parser")
+body = li_post.select_one(".show-more-less-html__markup")
+body.string = body.get_text("\n", strip=True)[:CUT]
+criteria = li_post.select_one(".description__job-criteria-list")
+save("board_linkedin.json", {"search": "".join(map(str, cards)), "posting": str(criteria) + str(body)})
+
+# Naukri needs a real browser window: the search page's own API response, read through Playwright.
+from playwright.sync_api import sync_playwright  # noqa: E402
+
+with sync_playwright() as p:
+    browser = p.chromium.launch_persistent_context(str(Path(__file__).resolve().parent.parent / "browser-profile" / "naukri"),
+                                                   channel="chrome", headless=False)
+    tab = browser.new_page()
+    with tab.expect_response(lambda r: "/jobapi/v3/search" in r.url, timeout=45000) as hit:
+        tab.goto("https://www.naukri.com/software-engineer-jobs?experience=0&jobAge=2", wait_until="domcontentloaded")
+    nk = hit.value.json()
+    browser.close()
+keep = ("jobId", "title", "companyName", "jdURL", "createdDate", "minimumExperience", "maximumExperience",
+        "placeholders", "jobDescription")
+save("board_naukri.json", {"noOfJobs": 3, "jobDetails": [
+    {k: (x.get(k)[:CUT] if isinstance(x.get(k), str) else x.get(k)) for k in keep} for x in nk["jobDetails"][:3]]})

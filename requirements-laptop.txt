@@ -1,0 +1,4 @@
+# The laptop run (python -m jobscan --group laptop) also needs a browser driver for Naukri.
+# It drives the installed Google Chrome, so no "playwright install" step is needed.
+-r requirements.txt
+playwright==1.63.0

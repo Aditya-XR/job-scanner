@@ -122,13 +122,106 @@ def test_cutshort_keeps_0_1_year_minimums_and_stops_at_the_last_page(monkeypatch
     assert [experience_check("Software Engineer", j.description)[0] for j in jobs] == ["keep", "keep"]
 
 
+def no_wait(monkeypatch, throttle):
+    monkeypatch.setattr(throttle, "wait", lambda: None)
+
+
+def test_instahyre_keeps_software_titles_with_the_date_from_their_page(monkeypatch):
+    data = load("board_instahyre.json")
+    serve(monkeypatch, lambda url, **kw: data["listing"])
+    monkeypatch.setattr(boards, "get_text", lambda url, **kw: data["pages"][url])
+    no_wait(monkeypatch, boards._INSTAHYRE)
+    jobs, complete = boards.instahyre({})
+    assert complete                                   # the whole 0-years listing was read
+    check(jobs, "instahyre:")
+    assert [j.title for j in jobs] == ["DevOps Engineer", "Software Engineer"]   # not the sales job
+    assert all(j.posted for j in jobs)                # the listing has no dates; the job page does
+    assert all(experience_check(j.title, j.description)[0] == "keep" for j in jobs)
+
+
+def test_instahyre_keeps_a_job_whose_page_failed(monkeypatch):
+    data = load("board_instahyre.json")
+    serve(monkeypatch, lambda url, **kw: data["listing"])
+    monkeypatch.setattr(boards, "get_text", blocked)
+    no_wait(monkeypatch, boards._INSTAHYRE)
+    jobs, _ = boards.instahyre({})
+    assert len(jobs) == 2 and all(j.posted is None for j in jobs)
+
+
+def test_wellfound_skips_2_year_listings_and_stops_when_a_page_adds_nothing(monkeypatch):
+    data = load("board_wellfound.json")
+    pages = []
+    monkeypatch.setattr(boards, "get_text", lambda url, **kw: pages.append(url) or data["page"])
+    no_wait(monkeypatch, boards._WELLFOUND)
+    jobs, complete = boards.wellfound({})
+    assert not complete
+    check(jobs, "wellfound:")
+    assert [(j.company, j.job_id) for j in jobs] == [("Insight Consultants", "wellfound:4824775"),
+                                                     ("ClearFeed", "wellfound:4377418")]
+    assert all(j.description and j.posted for j in jobs)
+    # first role: page 1, then page 2 adds nothing; every other role: page 1 adds nothing
+    assert len(pages) == len(boards.WELLFOUND_ROLES) + 1
+
+
+def test_wellfound_reports_a_blocked_page():
+    with pytest.raises(RuntimeError, match="__NEXT_DATA__"):
+        boards._apollo_state("<html><title>Just a moment...</title></html>")
+
+
+def test_naukri_search_response():
+    from jobscan.sources.browser import naukri_job     # parsing only: no browser needed
+    jobs = [naukri_job(x) for x in load("board_naukri.json")["jobDetails"]]
+    check(jobs, "naukri:")
+    cisco = next(j for j in jobs if j.company == "Cisco")
+    assert cisco.description.startswith("Experience: 0-2 years") and cisco.location == "Bengaluru"
+    assert all(j.posted for j in jobs)
+
+
+def linkedin_site(monkeypatch, limit_after=None):
+    """LinkedIn from the fixture; with limit_after=n, the n+1th request is rate-limited."""
+    data, calls = load("board_linkedin.json"), []
+
+    def get(url, **kw):
+        calls.append(url)
+        if limit_after is not None and len(calls) > limit_after:
+            raise boards._RateLimited()
+        return data["search"] if url == boards.LINKEDIN_SEARCH else data["posting"]
+    monkeypatch.setattr(boards, "_linkedin_get", get)
+    return calls
+
+
+def test_linkedin(monkeypatch):
+    calls = linkedin_site(monkeypatch)
+    jobs, complete = boards.linkedin({})
+    assert not complete                               # a 2-day window: never closes rows
+    check(jobs, "linkedin:")
+    assert len(jobs) == 3 and len(calls) == len(boards.LINKEDIN_QUERIES)   # under 10 cards: one page each
+    assert jobs[0].url == f"https://www.linkedin.com/jobs/view/{jobs[0].job_id.split(':')[1]}/"
+    assert all(j.posted for j in jobs)
+    jobs[0].ensure_description()
+    assert jobs[0].description.startswith("LinkedIn seniority level: ")
+
+
+def test_linkedin_rate_limit_keeps_what_was_read(monkeypatch):
+    linkedin_site(monkeypatch, limit_after=1)
+    jobs, _ = boards.linkedin({})                     # the 2nd search is refused: page 1 stays
+    assert len(jobs) == 3
+    jobs[0].ensure_description()                      # refused too: kept, marked as unchecked
+    assert jobs[0].description == ""
+    assert experience_check(jobs[0].title, "")[2] == "description not available"
+    linkedin_site(monkeypatch, limit_after=0)
+    with pytest.raises(RuntimeError, match="rate-limiting"):
+        boards.linkedin({})
+
+
 def test_run_groups():
-    """Foundit answers 403 to GitHub's servers, so it runs from the laptop, not in the cloud run."""
+    """Boards that refuse GitHub's servers or need a browser run from the laptop, not in the cloud run."""
     from jobscan.run import load_tasks
     names = lambda group: {name for name, _, _ in load_tasks(group)}
     assert {"Unstop", "Internshala", "Hirist", "Cutshort", "Walmart", "Goldman Sachs"} <= names("cloud")
-    assert "Foundit" not in names("cloud")
-    assert names("laptop") == {"Foundit"}
+    assert not names("cloud") & boards.HOME_IP_ONLY
+    assert names("laptop") == {"Foundit", "LinkedIn", "Naukri"}
+    assert {"Instahyre", "Wellfound"} <= names("cloud")
     assert names("boards") == set(boards.BOARDS)
 
 

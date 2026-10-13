@@ -1,11 +1,14 @@
 """Google Sheet: the Jobs tab (newest first; your Status/Notes are never overwritten), the Run log,
 and a hidden Seen tab of postings already judged and dropped."""
+import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from contextlib import contextmanager
+from datetime import datetime, timedelta
 
 import gspread
 
-from .core import ROOT, env, fingerprint, posting_id, today
+from .core import IST, ROOT, env, fingerprint, posting_id, today
 from .filters import STRETCH
 from .sources.boards import BOARDS
 from .state import Row, Tracker
@@ -24,8 +27,12 @@ LOG_HEADERS = ["Run at (IST)", "Group", "Source", "Fetched", "India + software",
                "New in sheet", "Error", "Complete read", "ID fallbacks", "ID conflicts", "Closed today"]
 SEEN_HEADERS = ["Job ID", "Dropped on", "Company", "Title"]
 SEEN_KEEP_DAYS = 120
+LOCK_WAIT_MINUTES = 20     # a laptop run takes ~10; GitHub's job allows 45
+LOCK_STALE = timedelta(minutes=40)   # longer than any run: a crashed run's claim expires
+LOCK_SETTLE_SECONDS = 5
 ID_SEP = " | "            # a row merged from identical copies lists all their IDs
 APPLY_LABEL = "Apply ↗"
+log = logging.getLogger("jobscan")
 
 
 def _col(i: int) -> str:
@@ -203,6 +210,34 @@ class Sheet:
         ]
         self.book.batch_update({"requests": requests})
 
+    # ---------- one writer at a time ----------
+
+    @contextmanager
+    def lock(self, holder: str, wait_minutes: int = LOCK_WAIT_MINUTES):
+        """Hold the sheet for one run. GitHub queues its own runs, but the laptop's run is
+        another machine, so a hidden Lock tab names who is writing. Sheets has no
+        compare-and-set: claim the cell, wait, and check the claim survived."""
+        ws = self._worksheet("Lock", hidden=True)
+        me = f"{holder} | {datetime.now(IST):%Y-%m-%d %H:%M:%S}"
+        deadline = time.monotonic() + wait_minutes * 60
+        while True:
+            current = ws.acell("A1").value or ""
+            if not current or _lock_is_stale(current):
+                ws.update_acell("A1", me)
+                time.sleep(LOCK_SETTLE_SECONDS)
+                if ws.acell("A1").value == me:
+                    break
+                continue
+            if time.monotonic() > deadline:
+                raise RuntimeError(f"The sheet is still in use ({current}) after {wait_minutes} minutes")
+            log.info("The sheet is in use (%s); waiting", current)
+            time.sleep(30)
+        try:
+            yield
+        finally:
+            if ws.acell("A1").value == me:
+                ws.update_acell("A1", "")
+
     # ---------- reading ----------
 
     def tracker(self) -> Tracker:
@@ -273,6 +308,15 @@ class Sheet:
             if len(r) > 3:
                 last[r[2]] = r    # the log is in run order: later rows win
         return {name for name, r in last.items() if r[3] in ("0", "") or (len(r) > 7 and r[7])}
+
+
+def _lock_is_stale(claim: str) -> bool:
+    """A claim reads "<holder> | 2026-10-13 08:30:00" (IST); an unreadable one counts as stale."""
+    try:
+        at = datetime.strptime(claim.rsplit(" | ", 1)[1], "%Y-%m-%d %H:%M:%S").replace(tzinfo=IST)
+    except (IndexError, ValueError):
+        return True
+    return datetime.now(IST) - at > LOCK_STALE
 
 
 def _fingerprints(jobs):

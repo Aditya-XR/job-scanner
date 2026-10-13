@@ -161,17 +161,22 @@ def html_to_text(s: str) -> str:
     return re.sub(r"\n\s*\n+", "\n", text).strip()
 
 
-def json_ld_description(page_html: str) -> str:
-    """Description text from the schema.org JobPosting block that job pages embed for Google
-    Jobs, or "" if the page has none."""
+def json_ld_posting(page_html: str) -> dict:
+    """The schema.org JobPosting block that job pages embed for Google Jobs, or {} if the page
+    has none."""
     for script in BeautifulSoup(page_html, "html.parser").select('script[type="application/ld+json"]'):
         try:
             data = json.loads(script.get_text(), strict=False)
         except ValueError:
             continue
         if isinstance(data, dict) and data.get("@type") == "JobPosting":
-            return html_to_text(data.get("description", ""))
-    return ""
+            return data
+    return {}
+
+
+def json_ld_description(page_html: str) -> str:
+    """Description text from the page's JobPosting block, or "" if the page has none."""
+    return html_to_text(json_ld_posting(page_html).get("description", ""))
 
 
 def parse_date(value) -> Optional[date]:
