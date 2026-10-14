@@ -182,3 +182,17 @@ def test_a_company_feed_posting_is_never_hidden_behind_a_board_row(fixed_today, 
     new, _ = select([job("greenhouse:swiggy:2", source="Greenhouse", company="Swiggy")], stats,
                     Tracker([row], [], date(2026, 10, 4)), gemini=no_ai)
     assert [j.job_id for j in new] == ["greenhouse:swiggy:2"]
+
+
+def test_foundit_jobs_must_state_their_experience(fixed_today, stats, no_ai):
+    """Foundit lists many jobs that say nothing about experience: those are dropped there,
+    while the same silence on other sites keeps the job as "Not mentioned"."""
+    silent = "Build backend services in Go."
+    jobs = [job("fo:1", source="Foundit", title="Backend Developer", desc=silent),
+            job("fo:2", source="Foundit", title="Go Developer", desc="Experience: 0-1 years\n" + silent),
+            job("fo:3", source="Foundit", title="Graduate Engineer Trainee", desc=silent),
+            job("fo:4", source="Foundit", title="Software Developer", desc="Freshers welcome. " + silent),
+            job("wd:1", source="Workday", title="Platform Engineer", desc=silent)]
+    new, dropped = run(jobs, stats, no_ai)
+    assert sorted(j.job_id for j in new) == ["fo:2", "fo:3", "fo:4", "wd:1"]
+    assert [j.job_id for j in dropped] == ["fo:1"]

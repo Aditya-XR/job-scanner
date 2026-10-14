@@ -19,7 +19,7 @@ import yaml
 
 from .core import IST, ROOT, fingerprint, job_key, today
 from .filters import STRETCH, Gemini, experience_check, is_india, is_software
-from .sources.boards import BOARDS, HOME_IP_ONLY
+from .sources.boards import BOARDS, HOME_IP_ONLY, NEEDS_STATED_EXPERIENCE
 from .sources.feeds import CUSTOM, READERS
 from .state import Tracker
 
@@ -175,6 +175,8 @@ def select(jobs, stats, tracker: Tracker, gemini=None, never_show=frozenset()):
                 decision, reason = ("keep" if verdict[0] else "drop"), f"AI: {verdict[1]}"
             # The description asks for years of experience but also invites freshers: a long shot.
             label = f"{STRETCH}{label}"
+        if decision == "keep" and label == "Not mentioned" and j.feed in NEEDS_STATED_EXPERIENCE:
+            decision = "drop"
         if decision != "keep":
             dropped.append(j)
             continue

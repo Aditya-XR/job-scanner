@@ -553,3 +553,7 @@ BOARDS = {"Unstop": unstop, "Internshala": internshala, "Hirist": hirist, "Cutsh
 # datacenter IPs, LinkedIn answers 429 to GitHub's shared IPs from the first request (tested
 # 2026-10-13), and Naukri needs a real browser window. Instahyre and Wellfound work from GitHub.
 HOME_IP_ONLY = {"Foundit", "LinkedIn", "Naukri"}
+# A job from these boards is dropped, not kept as "Not mentioned", when nothing states the
+# experience it needs: no range from the board, no years or fresher wording in the description,
+# no intern/graduate/trainee title. Foundit lists over a hundred such jobs a day, mostly mid-level.
+NEEDS_STATED_EXPERIENCE = {"Foundit"}
