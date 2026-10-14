@@ -38,8 +38,8 @@ succeeded yet that day (IST), so a missed or failed morning run still happens, j
 | Internshala | the whole fresher-jobs listing for computer-science categories | yes |
 | Hirist | every job in the software categories with a 0-1 year range | yes |
 | Cutshort | every posting from the last 10 days with a minimum of 0-1 years | no (window) |
-| Foundit (laptop) | software/developer searches, 0-1 years, posted in the last 2 days | no (window) |
-| LinkedIn (laptop) | 5 searches (software engineer/developer, frontend, backend, full stack), up to 3 pages each, Internship + Entry level, India, last 2 days, through the public guest search: no login | no (window) |
+| Foundit (laptop) | software/developer searches, 0-1 years, posted in the last 2 days; a job that states no experience at all is dropped (Foundit lists 100+ of those a day) | no (window) |
+| LinkedIn (laptop) | signed in as the burner account: 5 searches (software engineer/developer, frontend, backend, full stack), up to 4 pages of 25 each, Internship + Entry level, India, last 2 days, with the descriptions LinkedIn's own page prefetches. Without `LINKEDIN_LI_AT`, its public guest search instead (a page or two a day) | no (window) |
 | Naukri (laptop) | 12 searches (software engineer/developer, SDE, frontend, backend, full stack, Java, Python, React, Node.js, Android, QA automation), first page each, 0 years, last 2 days, in a visible Chrome window | no (window) |
 | Instahyre | the whole 0-years listing; software titles only, each job page read for its date | yes |
 | Wellfound | 5 role pages for India (software, frontend, backend, full-stack, mobile engineer), up to 5 pages each; 2+ year listings skipped | no (window) |
@@ -125,16 +125,18 @@ powershell -ExecutionPolicy Bypass -File laptop\install_task.ps1      # daily at
 ```
 
 The task runs at 08:30, or as soon as the laptop is on after a missed 08:30, while you are logged
-in: Naukri opens a Chrome window for about a minute (it refuses headless browsers). Each run
+in: Chrome opens for a few minutes, as the LinkedIn burner and for Naukri (which refuses
+headless browsers). Each run
 writes `logs\laptop-<date>.log`, and its Gmail summary says "run: laptop". The sheet takes one
 writer at a time through a hidden **Lock** tab, so the laptop run and GitHub's run never write
 over each other: whichever comes second waits.
 
-LinkedIn's public search allows one connection only about 20 requests an hour. The searches
-come first; descriptions are read with what is left, and a job whose description LinkedIn
-refused is still added, as **Not mentioned** with "description not available" (check the years
-on LinkedIn; it has already passed LinkedIn's own entry-level filter). Naukri serves only the
-first 20 results of each search, so it runs 12 narrow searches instead.
+LinkedIn is read signed in as the burner account (`LINKEDIN_LI_AT`), page by page at a
+person's pace: its public search allows one connection only a page or two a day. If LinkedIn
+ever asks the account to sign in again or pass a security check, the run stops reading LinkedIn
+and the Run log says so: open LinkedIn in Chrome as the burner, clear it, and recopy `li_at`
+into `.env`. Naukri serves only the first 20 results of each search, so it runs 12 narrow
+searches instead.
 
 ## Run
 

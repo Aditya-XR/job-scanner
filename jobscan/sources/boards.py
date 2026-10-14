@@ -16,8 +16,8 @@ from datetime import timedelta
 import requests
 from bs4 import BeautifulSoup
 
-from ..core import (HTTP, Job, Throttle, get_json, get_text, html_to_text, json_ld_description, json_ld_posting,
-                    parse_date, posting_id, today)
+from ..core import (HTTP, Job, Throttle, env, get_json, get_text, html_to_text, json_ld_description,
+                    json_ld_posting, parse_date, posting_id, today)
 from ..filters import is_india, is_software
 
 REMOTE = "Remote (India)"
@@ -547,8 +547,17 @@ def _naukri(c):
     return naukri(c)
 
 
+def _linkedin(c):
+    """Signed in as the burner account when LINKEDIN_LI_AT is set (hundreds of jobs, with
+    descriptions); otherwise the public guest search (a page or two a day)."""
+    if env("LINKEDIN_LI_AT"):
+        from .browser import linkedin_signed_in   # needs Playwright: a laptop-only dependency
+        return linkedin_signed_in(c)
+    return linkedin(c)
+
+
 BOARDS = {"Unstop": unstop, "Internshala": internshala, "Hirist": hirist, "Cutshort": cutshort, "Foundit": foundit,
-          "LinkedIn": linkedin, "Naukri": _naukri, "Instahyre": instahyre, "Wellfound": wellfound}
+          "LinkedIn": _linkedin, "Naukri": _naukri, "Instahyre": instahyre, "Wellfound": wellfound}
 # Read from the laptop (the "laptop" run group), not GitHub's servers: Foundit answers 403 to
 # datacenter IPs, LinkedIn answers 429 to GitHub's shared IPs from the first request (tested
 # 2026-10-13), and Naukri needs a real browser window. Instahyre and Wellfound work from GitHub.

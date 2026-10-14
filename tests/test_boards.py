@@ -214,6 +214,41 @@ def test_linkedin_rate_limit_keeps_what_was_read(monkeypatch):
         boards.linkedin({})
 
 
+def test_linkedin_signed_in_search_and_prefetched_descriptions():
+    from jobscan.sources.browser import linkedin_job, read_linkedin   # parsing only: no browser needed
+    data = load("board_linkedin_signed_in.json")
+    cards, descriptions = {}, {}
+    assert read_linkedin([data["search"], data["prefetch"], {}], cards, descriptions) == 3
+    jobs = [linkedin_job(card, descriptions.get(native, "")) for native, card in cards.items()]
+    check(jobs, "linkedin:")
+    assert [j.job_id for j in jobs] == ["linkedin:4479074097", "linkedin:4477930290", "linkedin:4478109780"]
+    assert jobs[0].company == "Hire Daily" and jobs[0].url == "https://www.linkedin.com/jobs/view/4479074097/"
+    assert all(j.posted for j in jobs)
+    assert jobs[0].description and jobs[1].description and not jobs[2].description   # not prefetched: kept unchecked
+
+
+def test_linkedin_signed_in_leaves_the_next_pages_cards_for_that_page():
+    """Page 1 also fetches page 2's cards, without their descriptions: they wait for page 2."""
+    from jobscan.sources.browser import read_linkedin
+    data = load("board_linkedin_signed_in.json")
+    ahead = {"data": {"paging": {"total": 50, "start": 25}}, "included": data["search"]["included"]}
+    cards, descriptions = {}, {}
+    assert read_linkedin([ahead, data["prefetch"]], cards, descriptions, start=0) == 50
+    assert not cards and len(descriptions) == 2
+    read_linkedin([ahead], cards, descriptions, start=25)
+    assert len(cards) == 3
+
+
+def test_linkedin_uses_the_burner_only_when_its_cookie_is_set(monkeypatch):
+    import jobscan.sources.browser as browser
+    monkeypatch.setattr(browser, "linkedin_signed_in", lambda c: (["signed in"], False))
+    monkeypatch.setattr(boards, "linkedin", lambda c: (["guest"], False))
+    monkeypatch.setenv("LINKEDIN_LI_AT", "x")
+    assert boards.BOARDS["LinkedIn"]({}) == (["signed in"], False)
+    monkeypatch.setenv("LINKEDIN_LI_AT", "")
+    assert boards.BOARDS["LinkedIn"]({}) == (["guest"], False)
+
+
 def test_run_groups():
     """Boards that refuse GitHub's servers or need a browser run from the laptop, not in the cloud run."""
     from jobscan.run import load_tasks

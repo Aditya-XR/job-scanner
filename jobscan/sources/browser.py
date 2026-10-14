@@ -1,16 +1,25 @@
-"""Job boards that answer only a real browser, read from the laptop.
+"""Job boards read through a real browser on the laptop.
 
-Naukri's search API refuses plain requests ("recaptcha required"): its own search page gets
-the token. So the installed Chrome is driven through Playwright, in a visible window (headless
-Chrome is refused), and the page's own search API responses are read as they arrive. Nothing
-here solves, skips or disguises anything: if the site challenges the browser, the read fails
-and the Run log says so.
+The installed Chrome is driven through Playwright in a visible window, and each site's own
+search page is opened; the reader keeps the API responses that page makes as they arrive.
+
+- Naukri's search API refuses plain requests ("recaptcha required"): its own page gets the
+  token. Headless Chrome is refused.
+- LinkedIn, signed in as the burner account (LINKEDIN_LI_AT): its public search allows a
+  connection only a page or two a day, while the signed-in search page lists hundreds of
+  jobs and prefetches their descriptions itself.
+
+Nothing here solves, skips or disguises anything: if a site challenges the browser or asks
+the account to sign in again, the read stops and the Run log says so.
 
 Playwright is a laptop-only dependency (requirements-laptop.txt), imported only when a reader
 runs.
 """
-from ..core import ROOT, Job, html_to_text, parse_date, posting_id
-from .boards import _place, _years
+import random
+from urllib.parse import urlencode
+
+from ..core import ROOT, Job, env, html_to_text, parse_date, posting_id
+from .boards import LINKEDIN, LINKEDIN_FILTERS, LINKEDIN_QUERIES, _place, _years
 
 PROFILE = ROOT / "browser-profile"     # the browser's cookies between runs (git-ignored)
 
@@ -72,3 +81,91 @@ def naukri_job(x):
     jid, fb = posting_id("naukri", "", x.get("jobId"), url, company, title)
     return Job("Naukri", company, title, place, url, job_id=jid, id_fallback=fb, posted=parse_date(x.get("createdDate")),
                description=head + html_to_text(x.get("jobDescription") or ""))
+
+
+# ---------- LinkedIn, signed in as the burner account ----------
+
+LINKEDIN_PAGES = 4                # 25 jobs a page: up to 100 a search
+LINKEDIN_PAUSE_MS = (5000, 9000)  # on each page, at a person's pace: the account is what's at stake
+LINKEDIN_CARDS = "JobCards"       # voyagerJobsDashJobCards: the search results, and the description prefetch
+_SIGN_IN_PAGES = ("/checkpoint", "/login", "/authwall", "/uas/")
+
+
+class SignInNeeded(RuntimeError):
+    pass
+
+
+def linkedin_signed_in(c):
+    from playwright.sync_api import sync_playwright
+
+    cards, descriptions = {}, {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch_persistent_context(str(PROFILE / "linkedin"), channel="chrome", headless=False,
+                                                       viewport={"width": 1366, "height": 900})
+        try:
+            browser.add_cookies([{"name": "li_at", "value": env("LINKEDIN_LI_AT"), "domain": ".linkedin.com",
+                                  "path": "/", "secure": True, "httpOnly": True, "sameSite": "None"}])
+            tab = browser.new_page()
+            responses = []
+            tab.on("response", lambda r: responses.append(r)
+                   if "/voyager/api/" in r.url and LINKEDIN_CARDS in r.url else None)
+            for query in LINKEDIN_QUERIES:
+                for page in range(LINKEDIN_PAGES):
+                    responses.clear()
+                    params = {"keywords": query, **LINKEDIN_FILTERS, **({"start": page * 25} if page else {})}
+                    tab.goto(f"{LINKEDIN}/jobs/search/?{urlencode(params)}", wait_until="domcontentloaded",
+                             timeout=60000)
+                    if any(k in tab.url for k in _SIGN_IN_PAGES):
+                        raise SignInNeeded("LinkedIn wants the burner account to sign in again or pass a security "
+                                           "check: open LinkedIn in Chrome as the burner, then recopy li_at into .env")
+                    tab.wait_for_timeout(random.randint(*LINKEDIN_PAUSE_MS))   # its cards, then their descriptions
+                    total = read_linkedin([_json(r) for r in responses], cards, descriptions, start=page * 25)
+                    if (page + 1) * 25 >= total:
+                        break
+        finally:
+            browser.close()
+    return [linkedin_job(card, descriptions.get(native, "")) for native, card in cards.items()], False
+
+
+def _json(response):
+    try:
+        return response.json() if response.status == 200 else {}
+    except Exception:   # a response the page abandoned on its way to the next one
+        return {}
+
+
+def read_linkedin(bodies, cards, descriptions, start=0):
+    """Collect job cards and prefetched descriptions from LinkedIn's API responses (normalized
+    JSON: the entities sit in "included"). Returns the search's total, or 0 if none was seen.
+
+    A search page also fetches the next page's cards ahead of time, but prefetches descriptions
+    only for its own 25: cards are taken from the result starting at `start` only, and the next
+    page's are read, with their descriptions, when that page is opened."""
+    total = 0
+    for body in bodies:
+        paging = (body.get("data") or {}).get("paging") or {}
+        total = max(total, paging.get("total") or 0)
+        for x in body.get("included") or []:
+            kind = x.get("$type", "")
+            if (kind.endswith(".JobPostingCard") and x.get("jobPostingTitle") and x.get("jobPostingUrn")
+                    and paging.get("start") == start):
+                cards.setdefault(x["jobPostingUrn"].rsplit(":", 1)[-1], x)
+            elif kind.endswith(".JobDescription") and x.get("entityUrn"):
+                text = (x.get("descriptionText") or {}).get("text") or ""
+                if text:
+                    descriptions[x["entityUrn"].rsplit(":", 1)[-1]] = text
+    return total
+
+
+def linkedin_job(card, description):
+    """One signed-in search card (+ its prefetched description) -> Job. Same IDs as the public
+    search's, so a job seen both ways stays one row."""
+    native = card["jobPostingUrn"].rsplit(":", 1)[-1]
+    company = (card.get("primaryDescription") or {}).get("text", "")
+    title = card.get("jobPostingTitle", "")
+    place = _place([(card.get("secondaryDescription") or {}).get("text", "")])
+    listed = next((f.get("timeAt") for f in card.get("footerItems") or [] if f.get("type") == "LISTED_DATE"), None)
+    url = f"{LINKEDIN}/jobs/view/{native}/"
+    jid, fb = posting_id("linkedin", "", native, url, company, title)
+    return Job("LinkedIn", company, title, place or "", url, job_id=jid, id_fallback=fb, posted=parse_date(listed),
+               description=description)

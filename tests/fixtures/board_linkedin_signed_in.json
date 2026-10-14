@@ -1,0 +1,82 @@
+{
+ "search": {
+  "data": {
+   "paging": {
+    "total": 3,
+    "count": 25,
+    "start": 0
+   }
+  },
+  "included": [
+   {
+    "$type": "com.linkedin.voyager.dash.jobs.JobPostingCard",
+    "jobPostingUrn": "urn:li:fsd_jobPosting:4479074097",
+    "jobPostingTitle": "Java Developer",
+    "primaryDescription": {
+     "text": "Hire Daily"
+    },
+    "secondaryDescription": {
+     "text": "Hyderabad, Telangana, India (On-site)"
+    },
+    "footerItems": [
+     {
+      "type": "LISTED_DATE",
+      "timeAt": 1791914220000
+     }
+    ]
+   },
+   {
+    "$type": "com.linkedin.voyager.dash.jobs.JobPostingCard",
+    "jobPostingUrn": "urn:li:fsd_jobPosting:4477930290",
+    "jobPostingTitle": "Software Engineering Intern",
+    "primaryDescription": {
+     "text": "Flocci"
+    },
+    "secondaryDescription": {
+     "text": "Ranchi, Jharkhand, India (Hybrid)"
+    },
+    "footerItems": [
+     {
+      "type": "LISTED_DATE",
+      "timeAt": 1791840297000
+     }
+    ]
+   },
+   {
+    "$type": "com.linkedin.voyager.dash.jobs.JobPostingCard",
+    "jobPostingUrn": "urn:li:fsd_jobPosting:4478109780",
+    "jobPostingTitle": "PYTHON DEVELOPMENT INTERN",
+    "primaryDescription": {
+     "text": "UM IT Solutions"
+    },
+    "secondaryDescription": {
+     "text": "India (Remote)"
+    },
+    "footerItems": [
+     {
+      "type": "LISTED_DATE",
+      "timeAt": 1791905635000
+     }
+    ]
+   }
+  ]
+ },
+ "prefetch": {
+  "included": [
+   {
+    "$type": "com.linkedin.voyager.dash.jobs.JobDescription",
+    "entityUrn": "urn:li:fsd_jobDescription:4479074097",
+    "descriptionText": {
+     "text": "Java Developer – Advaithaits | Hyderabad About the Opportunity Advaithaits is featured for a Java Developer opportunity suitable for freshers. This role is ideal for candidates who want to begin their software development career by building, testing, and maintaining Java-based applications. Job Details Company: Advaithaits Job Role: Java Developer Location: Hyderabad, Telangana Experience: Fresher (0–1 year) Education: B.E. / B.Tech / B.Sc / BCA in Computer Science, IT, or a related field Expected Salary: ₹3–6 LPA (Estimated) Role Overview As a Java Developer, you may work with development tea"
+    }
+   },
+   {
+    "$type": "com.linkedin.voyager.dash.jobs.JobDescription",
+    "entityUrn": "urn:li:fsd_jobDescription:4477930290",
+    "descriptionText": {
+     "text": "Engineering trackSoftware Engineering InternFlocci Schools Suite · product team InternshipRanchi, Jharkhand (Hybrid)2 months~40 hrs/week2 openings Applications close30 September 2026 CohortNext cohort begins October 2026 What you getCertificate + merit bonus Apply for this roleHow the two months run What is the Software Engineering Intern position on Flocci Schools Suite?A two-month on-job training position on Flocci Schools Suite, the ERP that carries admissions, fees, attendance, examinations and the parent portal for Indian schools. You start on application testing, where money and marks ma"
+    }
+   }
+  ]
+ }
+}
