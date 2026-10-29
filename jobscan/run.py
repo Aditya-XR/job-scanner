@@ -1,7 +1,8 @@
 """Entry point.
 
     python -m jobscan                     # company feeds + open job boards -> sheet -> email
-    python -m jobscan --group laptop      # boards that block GitHub's servers (Foundit)
+    python -m jobscan --group laptop      # boards that block GitHub's servers (LinkedIn, Naukri, Foundit)
+    python -m jobscan --group laptop --if-due   # only the laptop boards that are due (the scheduled task)
     python -m jobscan --group boards      # every job board (or: --group feeds)
     python -m jobscan --dry-run           # print what would be added; no sheet, no email
     python -m jobscan --only meesho,nvidia,unstop
@@ -13,6 +14,7 @@ import platform
 import time
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import yaml
@@ -60,7 +62,7 @@ def load_never_show():
 
 def new_stats(fetched=0, error="", complete=False):
     return {"fetched": fetched, "error": error, "complete": complete, "fallbacks": 0, "conflicts": 0,
-            "matched": 0, "kept": 0, "new": 0, "closed": 0, "copies": 0, "elsewhere": 0}
+            "matched": 0, "kept": 0, "new": 0, "closed": 0, "copies": 0, "elsewhere": 0, "unread": 0}
 
 
 def check_ids(found, st):
@@ -88,19 +90,21 @@ def fetch_all(tasks):
         name, reader, cfg = task
         try:
             found, complete = reader(cfg)
-            return name, found, complete, ""
+            return name, found, complete, "", cfg.get("unread", 0)
         except Exception as e:  # one broken source must not stop the others
-            return name, [], False, f"{type(e).__name__}: {str(e)[:150]}"
+            return name, [], False, f"{type(e).__name__}: {str(e)[:150]}", cfg.get("unread", 0)
 
     with ThreadPoolExecutor(max_workers=12) as pool:
-        for name, found, complete, err in pool.map(run, tasks):
+        for name, found, complete, err, unread in pool.map(run, tasks):
             for j in found:
                 j.feed = name
             st = stats[name] = new_stats(len(found), err, complete and not err)
+            st["unread"] = unread    # a reader that can tell sets cfg["unread"]: jobs it was told of but never shown
             jobs.extend(check_ids(found, st))
             flags = "".join([f"  ERROR {err}" if err else "", "" if st["complete"] or err else "  (partial read)",
                              f"  {st['fallbacks']} without ID" if st["fallbacks"] else "",
-                             f"  {st['conflicts']} ID conflicts" if st["conflicts"] else ""])
+                             f"  {st['conflicts']} ID conflicts" if st["conflicts"] else "",
+                             f"  up to {unread} more listed but out of reach" if unread else ""])
             log.info("%-16s %4d jobs%s", name, len(found), flags)
     return jobs, stats
 
@@ -237,11 +241,24 @@ def _absorb(row, copy):
     row.reposted = row.reposted or copy.reposted
 
 
+@dataclass
+class Update:
+    """What one sheet update did, for the summary email."""
+    new: list
+    closed: list
+    copies: int
+    broken: set
+    id_problems: dict
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="jobscan")
     ap.add_argument("--group", default="cloud", choices=list(GROUPS),
                     help="cloud = company feeds + job boards (default, GitHub Actions); laptop = boards "
                          "that block GitHub's servers; feeds; boards")
+    ap.add_argument("--if-due", action="store_true",
+                    help="laptop group only: read just the boards that are due, each saved as soon as it's "
+                         "read (the scheduled task; see laptop.py)")
     ap.add_argument("--dry-run", action="store_true", help="print results; don't touch the sheet or email")
     ap.add_argument("--no-email", action="store_true")
     ap.add_argument("--only", help="comma-separated company names/slugs or board names, for testing")
@@ -249,27 +266,116 @@ def main(argv=None):
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     only = {s.strip().lower() for s in args.only.split(",")} if args.only else None
+    if args.if_due:
+        if args.group != "laptop":
+            ap.error("--if-due is for --group laptop")
+        return run_due(only, dry_run=args.dry_run, email=not args.no_email)
     tasks = load_tasks(args.group, only)
     log.info("Reading %d sources...", len(tasks))
     jobs, stats = fetch_all(tasks)
 
     if args.dry_run:
-        new, _ = select(jobs, stats, Tracker([], [], today()), never_show=load_never_show())
-        log.info("\n%d jobs fetched, %d India + software, %d new rows",
-                 len(jobs), sum(s["matched"] for s in stats.values()), len(new))
-        for j in new:
-            log.info("  %-11s | %-14s | %-50s | %-13s | %s", j.source[:11], j.company[:14], j.title[:50],
-                     j.experience, j.why_kept)
+        print_new(jobs, stats)
         return
 
     from .sheet import Sheet
     sheet = Sheet()
     # GitHub's runs and the laptop's both rewrite the sheet by row number: one at a time.
     with sheet.lock(f"{args.group} run on {platform.node()}"):
-        update_sheet(sheet, args, jobs, stats)
+        done = update_sheet(sheet, args.group, jobs, stats)
+    if not args.no_email:
+        send_email(sheet, args.group, [done])
+    log.info("Done: %d new rows in %s", len(done.new), sheet.url)
 
 
-def update_sheet(sheet, args, jobs, stats):
+def print_new(jobs, stats):
+    new, _ = select(jobs, stats, Tracker([], [], today()), never_show=load_never_show())
+    log.info("\n%d jobs fetched, %d India + software, %d new rows",
+             len(jobs), sum(s["matched"] for s in stats.values()), len(new))
+    for j in new:
+        log.info("  %-11s | %-14s | %-50s | %-13s | %s", j.source[:11], j.company[:14], j.title[:50],
+                 j.experience, j.why_kept)
+
+
+def run_due(only=None, dry_run=False, email=True):
+    """The laptop's scheduled task, started at log in, unlock, when the internet connects and
+    every hour. Reads the laptop boards that are due one at a time, and saves each to the sheet
+    as soon as it's read, so a run cut short keeps the boards it finished (see laptop.py)."""
+    from . import laptop
+    from .sheet import Sheet
+
+    log.info("%s laptop check", f"{datetime.now(IST):%Y-%m-%d %H:%M}")
+    problem = laptop.connection_problem(laptop.GOOGLE)
+    if problem:
+        log.info("Nothing read: %s. Trying again at the next start.", problem)
+        return
+    if laptop.battery_low():
+        log.info("Nothing read: on battery at %d%% or less. Trying again at the next start.", laptop.MIN_BATTERY)
+        return
+
+    state = laptop.State.load()
+    sheet = Sheet()
+    state.seed(sheet.last_good_reads(HOME_IP_ONLY))
+    now, due = datetime.now(IST), []
+    for task in load_tasks("laptop", only):
+        name = task[0]
+        why = state.why_not_due(name, now)
+        if not why:   # a bad network doesn't use up one of the day's tries
+            why = laptop.connection_problem(laptop.HOSTS[name])
+        if why:
+            log.info("%-9s skipped: %s", name, why)
+        else:
+            due.append(task)
+
+    updates, read = [], 0
+    with laptop.keep_awake():
+        for name, reader, cfg in due:
+            started = datetime.now(IST)
+            days, missed = state.window_days(name, started), state.days_missed(name, started)
+            log.info("\n%s: reading postings from the last %d days%s", name, days,
+                     f" ({missed} older days were missed: the laptop was off too long)" if missed else "")
+            cfg.update(days=days, deadline=time.monotonic() + laptop.SOURCE_MINUTES * 60)
+            if dry_run:
+                print_new(*fetch_all([(name, reader, cfg)]))
+                continue
+            state.tried(name, started)
+            state.save()
+            jobs, stats = fetch_all([(name, reader, cfg)])
+            try:
+                with sheet.lock(f"laptop run on {platform.node()}"):
+                    updates.append(update_sheet(sheet, "laptop", jobs, stats))
+            except Exception as e:   # not saved: the board is tried again at a later start
+                log.info("%s was read but not saved: %s: %s", name, type(e).__name__, e)
+                stats[name]["error"] = stats[name]["error"] or f"not saved: {type(e).__name__}: {str(e)[:150]}"
+            error = stats[name]["error"] or ("" if stats[name]["fetched"] else "no jobs")
+            if error:
+                state.failed(name, datetime.now(IST), error, pause=error.startswith("SignInNeeded"))
+            else:
+                state.succeeded(name, started)
+                read += 1
+            state.save()
+
+    # Only a session that read something emails: failures are retried later, are in the Run log,
+    # and the daily GitHub email warns once a board has gone 2 days unread.
+    if read and email:
+        send_email(sheet, "laptop", updates)
+    if updates:
+        log.info("Done: %d new rows in %s", sum(len(u.new) for u in updates), sheet.url)
+
+
+def send_email(sheet, group, updates):
+    """One summary for the run, with a warning for laptop boards not read for 2+ days."""
+    from . import laptop
+    from .notify import send_summary
+    overdue = laptop.overdue(sheet.last_good_reads(HOME_IP_ONLY), datetime.now(IST), HOME_IP_ONLY)
+    sent = send_summary(group, [j for u in updates for j in u.new], sheet.url, set().union(*(u.broken for u in updates)),
+                        closed_rows=[r for u in updates for r in u.closed],
+                        id_problems={k: v for u in updates for k, v in u.id_problems.items()},
+                        copies=sum(u.copies for u in updates), overdue=overdue)
+    log.info("Summary email %s", "sent" if sent else "skipped (Gmail not configured)")
+
+
+def update_sheet(sheet, group, jobs, stats) -> Update:
     action = sheet.prepare(jobs)
     if action != "ok":
         log.info("Sheet layout: %s", action)
@@ -296,17 +402,12 @@ def update_sheet(sheet, args, jobs, stats):
 
     run_at = datetime.now(IST).strftime("%Y-%m-%d %H:%M")
     broken_before = sheet.previous_zero_sources()
-    sheet.add_log([[run_at, args.group, name, s["fetched"], s["matched"], s["kept"], s["new"], s["error"],
-                    "yes" if s["complete"] else "no", s["fallbacks"], s["conflicts"], s["closed"]]
+    sheet.add_log([[run_at, group, name, s["fetched"], s["matched"], s["kept"], s["new"], s["error"],
+                    "yes" if s["complete"] else "no", s["fallbacks"], s["conflicts"], s["closed"], s["unread"]]
                    for name, s in sorted(stats.items())])
     broken_now = {n for n, s in stats.items() if s["fetched"] == 0 or s["error"]}
     id_problems = {n: (s["fallbacks"], s["conflicts"]) for n, s in stats.items() if s["fallbacks"] or s["conflicts"]}
-    if not args.no_email:
-        from .notify import send_summary
-        sent = send_summary(args.group, new, sheet.url, broken_now & broken_before,
-                            closed_rows=closed, id_problems=id_problems, copies=copies)
-        log.info("Summary email %s", "sent" if sent else "skipped (Gmail not configured)")
-    log.info("Done: %d new rows in %s", len(new), sheet.url)
+    return Update(new, closed, copies, broken_now & broken_before, id_problems)
 
 if __name__ == "__main__":
     main()

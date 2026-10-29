@@ -194,7 +194,7 @@ next_data = {"props": {"pageProps": {"apolloState": {"data": {**startups, **pick
 save("board_wellfound.json", {"page": f'<script id="__NEXT_DATA__" type="application/json">{json.dumps(next_data)}</script>'})
 
 # LinkedIn rate-limits hard: record it on its own, a few requests, spaced out.
-li_search = get_text(boards.LINKEDIN_SEARCH, params={"keywords": "software engineer", **boards.LINKEDIN_FILTERS,
+li_search = get_text(boards.LINKEDIN_SEARCH, params={"keywords": "software engineer", **boards.linkedin_filters(),
                                                      "start": 0}, headers={"Accept": "text/html"})
 cards = BeautifulSoup(li_search, "html.parser").select("li")[:3]
 native = cards[0].select_one("[data-entity-urn]")["data-entity-urn"].rsplit(":", 1)[-1]
@@ -209,12 +209,14 @@ save("board_linkedin.json", {"search": "".join(map(str, cards)), "posting": str(
 # Naukri needs a real browser window: the search page's own API response, read through Playwright.
 from playwright.sync_api import sync_playwright  # noqa: E402
 
+from jobscan.sources.browser import naukri_url  # noqa: E402
+
 with sync_playwright() as p:
     browser = p.chromium.launch_persistent_context(str(Path(__file__).resolve().parent.parent / "browser-profile" / "naukri"),
                                                    channel="chrome", headless=False)
     tab = browser.new_page()
     with tab.expect_response(lambda r: "/jobapi/v3/search" in r.url, timeout=45000) as hit:
-        tab.goto("https://www.naukri.com/software-engineer-jobs?experience=0&jobAge=2", wait_until="domcontentloaded")
+        tab.goto(naukri_url("software-engineer", 2), wait_until="domcontentloaded")
     nk = hit.value.json()
     browser.close()
 keep = ("jobId", "title", "companyName", "jdURL", "createdDate", "minimumExperience", "maximumExperience",

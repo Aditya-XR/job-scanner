@@ -9,16 +9,19 @@ E = html.escape
 
 
 def send_summary(group: str, new_jobs, sheet_url: str, broken_sources,
-                 closed_rows=(), id_problems=None, copies=0) -> bool:
+                 closed_rows=(), id_problems=None, copies=0, overdue=None) -> bool:
+    """overdue: {laptop board: its last good read, or None} for boards not read for 2+ days."""
     addr, pw = env("GMAIL_ADDRESS"), env("GMAIL_APP_PASSWORD").replace(" ", "")
     if not addr or not pw:
         return False
     to = env("ALERT_TO") or addr
-    id_problems = id_problems or {}
+    id_problems, overdue = id_problems or {}, overdue or {}
 
     subject = f"Job Scanner: {len(new_jobs)} new jobs ({today():%d %b})"
     if broken_sources or id_problems:
         subject += f" · {len(set(broken_sources) | set(id_problems))} source(s) need attention"
+    if overdue:
+        subject += " · laptop scan overdue"
 
     rows = "".join(
         f"<tr><td>{E(j.company)}</td><td><a href=\"{E(j.url)}\">{E(j.title)}</a>"
@@ -38,6 +41,12 @@ def send_summary(group: str, new_jobs, sheet_url: str, broken_sources,
         closed = f"<p><b>Taken down before you applied</b> (marked Closed in the sheet):</p><ul>{items}</ul>"
 
     alert = ""
+    if overdue:
+        items = "".join(f"<li>{E(name)}: {f'last read {at:%d %b %H:%M}' if at else 'no good read in the Run log'}</li>"
+                        for name, at in sorted(overdue.items()))
+        alert += (f"<p><b>Not read from the laptop for 2+ days.</b> Sign in to the laptop with the internet on "
+                  f"for about 15 minutes; the scan starts by itself and catches up on the missed days:</p>"
+                  f"<ul>{items}</ul>")
     if broken_sources:
         items = "".join(f"<li>{E(s)}</li>" for s in sorted(broken_sources))
         alert += (f"<p><b>Returned no jobs or failed on 2 runs in a row</b> (the site may have changed "

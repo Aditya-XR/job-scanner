@@ -137,6 +137,12 @@ def get_text(url: str, **kw) -> str:
     return r.text
 
 
+def out_of_time(cfg: dict) -> bool:
+    """True once a reader's deadline has passed: the laptop run gives each board a time limit,
+    and a reader stops paging there and keeps what it has."""
+    return time.monotonic() > cfg.get("deadline", float("inf"))
+
+
 class Throttle:
     """At most one request every `interval` seconds, shared by all threads. Job boards get
     one detail request per job, and the description loader runs 12 at a time."""
