@@ -1,4 +1,7 @@
 """Job board readers, from recorded real responses (tests/record_fixtures.py)."""
+import re
+import time
+
 import pytest
 import requests
 
@@ -175,6 +178,86 @@ def test_naukri_search_response():
     cisco = next(j for j in jobs if j.company == "Cisco")
     assert cisco.description.startswith("Experience: 0-2 years") and cisco.location == "Bengaluru"
     assert all(j.posted for j in jobs)
+
+
+def naukri_site(population):
+    """A fake Naukri search: shows the first 20 matching jobs and counts them all (noOfJobs)."""
+    template, calls = load("board_naukri.json")["jobDetails"][0], []
+
+    def search(url):
+        calls.append(url)
+        slug, city, days, mode = re.match(r"https://www\.naukri\.com/(.+?)-jobs(?:-in-([a-z-]+))?"
+                                          r"\?experience=0&jobAge=(\d+)(?:&wfhType=(\d))?$", url).groups()
+        hits = [x for x in population if x["slug"] == slug and city in (None, x["city"]) and mode in (None, x["mode"])]
+        return {"noOfJobs": len(hits), "jobDetails": [
+            dict(template, jobId=x["id"], placeholders=[{"type": "location", "label": x["place"]}]) for x in hits[:20]]}
+    return search, calls
+
+
+def naukri_jobs(n, city, mode, place, first):
+    return [{"id": str(first + i), "slug": "software-engineer", "city": city, "mode": mode, "place": place}
+            for i in range(n)]
+
+
+# 2026-10-30's shape: one search with more than a page, Bengaluru more than a page by itself.
+NAUKRI_POPULATION = (naukri_jobs(30, "bengaluru", "0", "Bengaluru", 0) + naukri_jobs(5, "bengaluru", "3", "Hybrid - Bengaluru", 100)
+                     + naukri_jobs(10, "pune", "0", "Pune", 200) + naukri_jobs(5, None, "0", "Kolkata", 300))
+
+
+def test_naukri_splits_a_search_with_more_than_a_page_by_city_then_work_mode():
+    from jobscan.sources.browser import NAUKRI_SEARCHES, read_naukri
+    search, calls = naukri_site(NAUKRI_POPULATION)
+    jobs, unread = read_naukri(search, {"days": 3})
+    check(jobs, "naukri:")
+    assert len(jobs) == 35            # Bengaluru office's first page, Bengaluru hybrid, Pune
+    assert unread == 15               # 10 more Bengaluru office jobs, and Kolkata (no city search)
+    assert all("jobAge=3" in u for u in calls)
+    split = [u for u in calls if "-in-" in u or "wfhType" in u]
+    assert len(calls) == len(NAUKRI_SEARCHES) + len(split) and len(split) == 6 + 1 + 3   # cities, remote, Bengaluru's modes
+    assert "https://www.naukri.com/software-engineer-jobs-in-bengaluru?experience=0&jobAge=3&wfhType=3" in calls
+
+
+def test_naukri_splits_at_most_a_set_number_of_extra_searches(monkeypatch):
+    import jobscan.sources.browser as browser
+    monkeypatch.setattr(browser, "NAUKRI_MAX_SPLITS", 3)
+    search, calls = naukri_site(NAUKRI_POPULATION)
+    jobs, unread = browser.read_naukri(search, {})
+    assert len(calls) == len(browser.NAUKRI_SEARCHES) + 3
+    assert (len(jobs), unread) == (25, 25)
+
+
+def test_naukri_keeps_what_it_read_when_a_later_search_fails():
+    from jobscan.sources.browser import read_naukri
+    search, calls = naukri_site(NAUKRI_POPULATION)
+
+    def flaky(url):
+        if len(calls) >= 2:
+            raise RuntimeError("Naukri served no search results ('Access Denied'): TimeoutError")
+        return search(url)
+    jobs, _ = read_naukri(flaky, {})
+    assert len(jobs) == 20            # the first search, before the failure
+    with pytest.raises(RuntimeError, match="Access Denied"):
+        read_naukri(flaky, {})        # failing from the first search: nothing read is an error
+
+
+def test_naukri_stops_at_its_time_limit():
+    from jobscan.sources.browser import read_naukri
+    search, calls = naukri_site(NAUKRI_POPULATION)
+    assert read_naukri(search, {"deadline": time.monotonic() - 1}) == ([], 0) and not calls
+
+
+def test_foundit_and_linkedin_read_back_as_many_days_as_asked(monkeypatch):
+    data, urls = load("board_foundit.json"), []
+    serve(monkeypatch, lambda url, **kw: urls.append(url) or data)
+    boards.foundit({})
+    boards.foundit({"days": 5})
+    assert "jobFreshness=2" in urls[0] and "jobFreshness=5" in urls[-1]
+
+    li, params = load("board_linkedin.json"), []
+    monkeypatch.setattr(boards, "_linkedin_get", lambda url, **kw: params.append(kw.get("params")) or li["search"])
+    boards.linkedin({})
+    boards.linkedin({"days": 4})
+    assert params[0]["f_TPR"] == "r172800" and params[-1]["f_TPR"] == "r345600"
 
 
 def linkedin_site(monkeypatch, limit_after=None):
