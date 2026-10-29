@@ -21,9 +21,9 @@ laptop-only job boards ┘                                                      
 
 Every morning at about 07:20 IST, GitHub Actions ([`daily.yml`](.github/workflows/daily.yml)) reads
 the company feeds and the open job boards, updates the sheet and sends the Gmail summary. Your
-laptop doesn't need to be on. The laptop-only boards are read by a second run at 08:30 from your
-laptop (see **Laptop run** below): Foundit answers 403 to GitHub's servers, LinkedIn rate-limits
-shared IPs hard, and Naukri answers only a real browser window.
+laptop doesn't need to be on. The laptop-only boards are read from your laptop whenever it's on
+(see **Laptop run** below): Foundit answers 403 to GitHub's servers, LinkedIn rate-limits shared
+IPs hard, and Naukri answers only a real browser window.
 
 GitHub's own schedule has been starting runs 3-10 hours late, so the run is started by a time
 trigger in the sheet's Apps Script ([`start_scan.gs`](apps_script/start_scan.gs)), which GitHub
@@ -38,9 +38,9 @@ succeeded yet that day (IST), so a missed or failed morning run still happens, j
 | Internshala | the whole fresher-jobs listing for computer-science categories | yes |
 | Hirist | every job in the software categories with a 0-1 year range | yes |
 | Cutshort | every posting from the last 10 days with a minimum of 0-1 years | no (window) |
-| Foundit (laptop) | software/developer searches, 0-1 years, posted in the last 2 days; a job that states no experience at all is dropped (Foundit lists 100+ of those a day) | no (window) |
-| LinkedIn (laptop) | signed in as the burner account: 5 searches (software engineer/developer, frontend, backend, full stack), up to 4 pages of 25 each, Internship + Entry level, India, last 2 days, with the descriptions LinkedIn's own page prefetches. Without `LINKEDIN_LI_AT`, its public guest search instead (a page or two a day) | no (window) |
-| Naukri (laptop) | 12 searches (software engineer/developer, SDE, frontend, backend, full stack, Java, Python, React, Node.js, Android, QA automation), first page each, 0 years, last 2 days, in a visible Chrome window | no (window) |
+| Foundit (laptop) | software/developer searches, 0-1 years, posted since its last good read (2-7 days); a job that states no experience at all is dropped (Foundit lists 100+ of those a day) | no (window) |
+| LinkedIn (laptop) | signed in as the burner account: 5 searches (software engineer/developer, frontend, backend, full stack), up to 4 pages of 25 each (6 when catching up), Internship + Entry level, India, posted since its last good read (2-7 days), with the descriptions LinkedIn's own page prefetches. Without `LINKEDIN_LI_AT`, its public guest search instead (a page or two a day) | no (window) |
+| Naukri (laptop) | 12 searches (software engineer/developer, SDE, frontend, backend, full stack, Java, Python, React, Node.js, Android, QA automation), 0 years, posted since its last good read (2-7 days), in a visible Chrome window. Naukri shows only the first 20 results of a search, so a search with more is read again per big city and remote-only, and a city with more, per work mode; what still doesn't fit is counted in the Run log's **Left unread** | no (window) |
 | Instahyre | the whole 0-years listing; software titles only, each job page read for its date | yes |
 | Wellfound | 5 role pages for India (software, frontend, backend, full-stack, mobile engineer), up to 5 pages each; 2+ year listings skipped | no (window) |
 
@@ -121,29 +121,55 @@ LinkedIn, Naukri and Foundit are read from your laptop by a scheduled task:
 
 ```powershell
 .venv\Scripts\pip install -r requirements-laptop.txt                 # Playwright, for Naukri
-powershell -ExecutionPolicy Bypass -File laptop\install_task.ps1      # daily at 08:30 (-At 09:00 to change)
+powershell -ExecutionPolicy Bypass -File laptop\install_task.ps1      # the scheduled task
 ```
 
-The task runs at 08:30, or as soon as the laptop is on after a missed 08:30, while you are logged
-in: Chrome opens for a few minutes, as the LinkedIn burner and for Naukri (which refuses
-headless browsers). Each run
-writes `logs\laptop-<date>.log`, and its Gmail summary says "run: laptop". The sheet takes one
-writer at a time through a hidden **Lock** tab, so the laptop run and GitHub's run never write
-over each other: whichever comes second waits.
+The laptop isn't on at a fixed time, so the task starts often: when you log in, when you unlock
+the laptop, when it connects to a network, and every hour while you're logged in. Each start
+reads only the boards that are due ([`laptop.py`](jobscan/laptop.py)), so most starts finish in a
+second:
+
+- **Due** means not read successfully today, not tried in the last hour, and tries left for the
+  day (3, or 2 for LinkedIn, to keep the burner's sessions few). A LinkedIn sign-in wall pauses
+  LinkedIn for 2 days.
+- **Catching up:** each board is asked for postings back to its own last good read, plus a day
+  of overlap (2 days normally, up to 7 after days off). Postings are matched by ID, so re-reading
+  a day never adds a row twice.
+- **One board at a time:** each board is saved to the sheet as soon as it's read, so a run cut
+  short keeps the boards it finished; the rest are tried at a later start.
+- **Safety checks first:** nothing is read without a trusted connection to Google, or on battery
+  at 25% or less. A board whose site doesn't show a certificate Python trusts (some campus and
+  office Wi-Fi intercept connections) is skipped without using a try, never worked around. While
+  reading, the laptop is kept awake (closing the lid still sleeps it), and a board still reading
+  after 20 minutes stops and keeps what it has.
+
+Chrome opens for a few minutes, as the LinkedIn burner and for Naukri (which refuses headless
+browsers). Each day's starts append to `logs\laptop-<date>.log`; the state is in
+`state\laptop.json` (a board missing from it starts from its last good read in the Run log). A
+run that read something sends a Gmail summary saying "run: laptop", and every summary warns when
+a laptop board hasn't been read for 2 days. The sheet takes one writer at a time through a
+hidden **Lock** tab, so the laptop run and GitHub's run never write over each other: whichever
+comes second waits.
+
+Task Scheduler's own history (each start, skip and failure, with the reason) is off by default;
+`install_task.ps1` turns it on when run as administrator, and otherwise prints the command.
 
 LinkedIn is read signed in as the burner account (`LINKEDIN_LI_AT`), page by page at a
 person's pace: its public search allows one connection only a page or two a day. If LinkedIn
 ever asks the account to sign in again or pass a security check, the run stops reading LinkedIn
 and the Run log says so: open LinkedIn in Chrome as the burner, clear it, and recopy `li_at`
-into `.env`. Naukri serves only the first 20 results of each search, so it runs 12 narrow
-searches instead.
+into `.env`. Naukri is read as a guest (no account). It serves only the first 20 results of
+each search, so it runs 12 narrow searches, split further while a search says it has more
+(at most 60 extra searches a run, a few seconds apart).
 
 ## Run
 
 ```bash
 python -m jobscan --dry-run          # print what would be added
 python -m jobscan                    # update the sheet and send the email
-python -m jobscan --group laptop     # LinkedIn, Naukri, Foundit (the scheduled task)
+python -m jobscan --group laptop     # LinkedIn, Naukri, Foundit, all of them now
+python -m jobscan --group laptop --if-due            # only the ones that are due (the scheduled task)
+python -m jobscan --group laptop --if-due --dry-run  # what's due and what it would add
 python -m jobscan --group boards     # every job board (--group feeds: only company sites)
 python -m jobscan --only meesho,nvidia,unstop --dry-run
 python -m jobscan.audit              # live check that every posting has a unique ID

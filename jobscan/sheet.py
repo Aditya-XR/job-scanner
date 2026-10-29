@@ -23,8 +23,10 @@ HEADERS_V2 = HEADERS[:-1]
 HEADERS_V1 = ["Found on", "Company", "Title", "Location", "Posted", "Experience", "Why kept",
               "Source", "Apply link", "Also seen on", "Status", "Notes", "Key"]
 STATUS_OPTIONS = ["To apply", "Applied", "OA", "Interview", "Offer", "Rejected", "Skip"]
+# Left unread: jobs the source said it has but never showed (Naukri: beyond the one page it serves).
 LOG_HEADERS = ["Run at (IST)", "Group", "Source", "Fetched", "India + software", "Kept",
-               "New in sheet", "Error", "Complete read", "ID fallbacks", "ID conflicts", "Closed today"]
+               "New in sheet", "Error", "Complete read", "ID fallbacks", "ID conflicts", "Closed today",
+               "Left unread"]
 SEEN_HEADERS = ["Job ID", "Dropped on", "Company", "Title"]
 SEEN_KEEP_DAYS = 120
 LOCK_WAIT_MINUTES = 20     # a laptop run takes ~10; GitHub's job allows 45
@@ -308,6 +310,17 @@ class Sheet:
             if len(r) > 3:
                 last[r[2]] = r    # the log is in run order: later rows win
         return {name for name, r in last.items() if r[3] in ("0", "") or (len(r) > 7 and r[7])}
+
+    def last_good_reads(self, names) -> dict:
+        """{source: when its last run that fetched jobs without an error was logged (IST)}."""
+        last = {}
+        for r in self.log.get_values("A2:H"):
+            if len(r) > 3 and r[2] in names and r[3] not in ("0", "") and not (len(r) > 7 and r[7]):
+                try:
+                    last[r[2]] = datetime.strptime(r[0], "%Y-%m-%d %H:%M").replace(tzinfo=IST)
+                except ValueError:
+                    continue
+        return last
 
 
 def _lock_is_stale(claim: str) -> bool:

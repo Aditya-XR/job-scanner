@@ -8,6 +8,9 @@ the normal experience check reads it.
 complete=True only when the board's whole fresher listing was read (so a missing posting
 really was taken down). Foundit and Cutshort are read as a window of recent days, so they are
 never complete and never close rows.
+
+The laptop run (laptop.py) can pass the laptop boards a config with "days" (how far back to
+read, after days the laptop was off) and "deadline" (time.monotonic() to stop paging at).
 """
 import json
 import re
@@ -17,7 +20,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from ..core import (HTTP, Job, Throttle, env, get_json, get_text, html_to_text, json_ld_description,
-                    json_ld_posting, parse_date, posting_id, today)
+                    json_ld_posting, out_of_time, parse_date, posting_id, today)
 from ..filters import is_india, is_software
 
 REMOTE = "Remote (India)"
@@ -172,15 +175,16 @@ FOUNDIT_HEADERS = {"Accept": "application/json, text/plain, */*", "Referer": f"{
 FOUNDIT_QUERY = ("software,developer,sde,programmer,full stack,backend,frontend,devops,sre,"
                  "machine learning,data engineer,qa automation,android,ios")
 FOUNDIT_DAYS = 2      # posted in the last 2 days: a daily run, plus a missed day
-FOUNDIT_MAX = 2000
+FOUNDIT_MAX_PER_DAY = 1000   # about 650 postings a day match (2026-10-30: 2 days 1311, 7 days 3866)
 _FOUNDIT = Throttle(0.5)
 
 
 def foundit(c):
+    days = c.get("days", FOUNDIT_DAYS)
     jobs, ids, start, total = [], set(), 0, 0
-    while start < FOUNDIT_MAX:
+    while start < FOUNDIT_MAX_PER_DAY * days and not out_of_time(c):
         resp = get_json(f"{FOUNDIT}/middleware/jobsearch?sort=2&limit=100&start={start}&query={FOUNDIT_QUERY}"
-                        f"&experienceRanges=0~1&locations=India&jobFreshness={FOUNDIT_DAYS}",
+                        f"&experienceRanges=0~1&locations=India&jobFreshness={days}",
                         headers=FOUNDIT_HEADERS).get("jobSearchResponse") or {}
         total = ((resp.get("meta") or {}).get("paging") or {}).get("total", 0)
         page = [x for x in resp.get("data") or [] if x.get("jobId")]   # the rest are ad slots
@@ -340,9 +344,15 @@ LINKEDIN_SEARCH = f"{LINKEDIN}/jobs-guest/jobs/api/seeMoreJobPostings/search"
 LINKEDIN_QUERIES = ("software engineer", "software developer", "frontend developer", "backend developer",
                     "full stack developer")
 # LinkedIn's own filters: India, Internship + Entry level, posted in the last 2 days (a daily run,
-# plus a missed day). The title and experience checks still apply on top.
-LINKEDIN_FILTERS = {"location": "India", "geoId": "102713980", "f_E": "1,2", "f_TPR": "r172800"}
+# plus a missed day; f_TPR takes any number of seconds). The title and experience checks still
+# apply on top.
+LINKEDIN_FILTERS = {"location": "India", "geoId": "102713980", "f_E": "1,2"}
+LINKEDIN_DAYS = 2
 LINKEDIN_PAGES = 3        # 10 cards a page
+
+
+def linkedin_filters(days=LINKEDIN_DAYS):
+    return {**LINKEDIN_FILTERS, "f_TPR": f"r{days * 86400}"}
 # The guest search allows one connection only ~20 requests an hour, then answers 429 for a
 # while. Requests are spaced out and never retried (retries only lengthen the block), and the
 # searches come first: descriptions are read with whatever is left.
@@ -372,16 +382,18 @@ def _linkedin_get(url, **kw):
 
 
 def linkedin(c):
-    """Five searches with LinkedIn's India, entry-level and last-2-days filters. A rate limit
+    """Five searches with LinkedIn's India, entry-level and last-days filters. A rate limit
     ends the read with what was found so far; only a limit before any job is an error."""
     global _linkedin_limited
     _linkedin_limited = False
-    jobs, ids = [], set()
+    jobs, ids, filters = [], set(), linkedin_filters(c.get("days", LINKEDIN_DAYS))
     try:
         for query in LINKEDIN_QUERIES:
             for page in range(LINKEDIN_PAGES):
+                if out_of_time(c):
+                    break
                 cards = BeautifulSoup(_linkedin_get(LINKEDIN_SEARCH, params={
-                    "keywords": query, **LINKEDIN_FILTERS, "start": page * 10}), "html.parser").select("li")
+                    "keywords": query, **filters, "start": page * 10}), "html.parser").select("li")
                 new = 0
                 for card in cards:
                     job = _linkedin_card(card)

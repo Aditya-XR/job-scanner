@@ -15,43 +15,107 @@ the account to sign in again, the read stops and the Run log says so.
 Playwright is a laptop-only dependency (requirements-laptop.txt), imported only when a reader
 runs.
 """
+import logging
 import random
 from urllib.parse import urlencode
 
-from ..core import ROOT, Job, env, html_to_text, parse_date, posting_id
-from .boards import LINKEDIN, LINKEDIN_FILTERS, LINKEDIN_QUERIES, _place, _years
+from ..core import ROOT, Job, env, html_to_text, out_of_time, parse_date, posting_id
+from .boards import LINKEDIN, LINKEDIN_DAYS, LINKEDIN_QUERIES, _place, _years, linkedin_filters
 
 PROFILE = ROOT / "browser-profile"     # the browser's cookies between runs (git-ignored)
+log = logging.getLogger("jobscan")
 
 NAUKRI = "https://www.naukri.com"
 # Naukri's own search pages (www.naukri.com/<slug>-jobs), with its experience and job-age filters.
 # Naukri serves this browser only the first page of each search (20 jobs; page 2 answers 400,
-# even from its own Next button), so the searches are many and narrow instead of deep.
+# even from its own Next button), so the searches are many and narrow instead of deep. Each
+# answer also says how many jobs match (noOfJobs): a search with more than its page is read again
+# city by city (/<slug>-jobs-in-<city>) plus remote-only, and a city that still has more, once
+# per work mode. 2026-10-30, last 2 days: "software engineer" had 159 jobs, Bengaluru 39 of them,
+# 33 of those in the office.
 NAUKRI_SEARCHES = ("software-engineer", "software-developer", "sde", "frontend-developer", "backend-developer",
                    "full-stack-developer", "java-developer", "python-developer", "react-developer",
                    "node-js-developer", "android-developer", "qa-automation-engineer")
-NAUKRI_FILTERS = "experience=0&jobAge=2"     # 0 years; posted in the last 2 days
+NAUKRI_DAYS = 2                        # posted in the last 2 days: a daily run, plus a missed day
+NAUKRI_CITIES = ("bengaluru", "hyderabad", "pune", "chennai", "delhi-ncr", "mumbai")
+NAUKRI_WORK_MODES = ("0", "3", "2")    # Naukri's wfhType: office, hybrid, remote
+NAUKRI_REMOTE = "2"
+NAUKRI_MAX_SPLITS = 60                 # extra searches a run, at most: a person's pace, not a crawl
+NAUKRI_PAUSE_MS = (3000, 6000)
 NAUKRI_API = "/jobapi/v3/search"
 
 
 def naukri(c):
     from playwright.sync_api import sync_playwright
 
-    jobs, ids = [], set()
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(str(PROFILE / "naukri"), channel="chrome", headless=False,
                                                        viewport={"width": 1280, "height": 860})
         try:
             tab = browser.new_page()
-            for slug in NAUKRI_SEARCHES:
-                for x in _naukri_search(tab, f"{NAUKRI}/{slug}-jobs?{NAUKRI_FILTERS}").get("jobDetails") or []:
-                    job = naukri_job(x)
-                    if job and job.job_id not in ids:
-                        ids.add(job.job_id)
-                        jobs.append(job)
+            opened = []
+
+            def search(url):
+                if opened:
+                    tab.wait_for_timeout(random.randint(*NAUKRI_PAUSE_MS))
+                opened.append(url)
+                return _naukri_search(tab, url)
+
+            jobs, c["unread"] = read_naukri(search, c)
         finally:
             browser.close()
     return jobs, False   # a window of recent days, never the whole board
+
+
+def naukri_url(slug, days, city=None, mode=None):
+    return (f"{NAUKRI}/{slug}-jobs{f'-in-{city}' if city else ''}?experience=0&jobAge={days}"
+            f"{f'&wfhType={mode}' if mode else ''}")
+
+
+def read_naukri(search, c):
+    """Every search in NAUKRI_SEARCHES, split while Naukri says it has more than it showed.
+    `search(url)` returns the search API's answer. Returns (jobs, unread): unread is how many
+    jobs Naukri counted that no page showed, an upper bound (two searches can count one job)."""
+    days = c.get("days", NAUKRI_DAYS)
+    jobs, ids, splits_left, unread = [], set(), [NAUKRI_MAX_SPLITS], 0
+
+    def read(slug, city=None, mode=None):
+        """Naukri's own IDs of the jobs shown for this search and its splits, and its total."""
+        body = search(naukri_url(slug, days, city, mode))
+        shown = set()
+        for x in body.get("jobDetails") or []:
+            shown.add(str(x.get("jobId")))
+            job = naukri_job(x)
+            if job and job.job_id not in ids:
+                ids.add(job.job_id)
+                jobs.append(job)
+        total = int(body.get("noOfJobs") or 0)
+        if total > len(shown):
+            if not city and not mode:
+                parts = [(place, None) for place in NAUKRI_CITIES] + [(None, NAUKRI_REMOTE)]
+            elif city and not mode:
+                parts = [(city, m) for m in NAUKRI_WORK_MODES]
+            else:
+                parts = []
+            for part_city, part_mode in parts:
+                if not splits_left[0] or out_of_time(c):
+                    break
+                splits_left[0] -= 1
+                shown |= read(slug, part_city, part_mode)[0]
+        return shown, total
+
+    try:
+        for slug in NAUKRI_SEARCHES:
+            if out_of_time(c):
+                log.info("Naukri: stopped at the time limit, before %s", slug)
+                break
+            shown, total = read(slug)
+            unread += max(0, total - len(shown))
+    except RuntimeError as e:
+        if not jobs:
+            raise
+        log.info("Naukri: stopped after an error, keeping what was read: %s", e)
+    return jobs, unread
 
 
 def _naukri_search(tab, url):
@@ -86,6 +150,7 @@ def naukri_job(x):
 # ---------- LinkedIn, signed in as the burner account ----------
 
 LINKEDIN_PAGES = 4                # 25 jobs a page: up to 100 a search
+LINKEDIN_MAX_PAGES = 6            # catching up after days off: a page more a day, but no more than this
 LINKEDIN_PAUSE_MS = (5000, 9000)  # on each page, at a person's pace: the account is what's at stake
 LINKEDIN_CARDS = "JobCards"       # voyagerJobsDashJobCards: the search results, and the description prefetch
 _SIGN_IN_PAGES = ("/checkpoint", "/login", "/authwall", "/uas/")
@@ -98,6 +163,8 @@ class SignInNeeded(RuntimeError):
 def linkedin_signed_in(c):
     from playwright.sync_api import sync_playwright
 
+    days = c.get("days", LINKEDIN_DAYS)
+    pages, filters = min(LINKEDIN_PAGES + max(0, days - LINKEDIN_DAYS), LINKEDIN_MAX_PAGES), linkedin_filters(days)
     cards, descriptions = {}, {}
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(str(PROFILE / "linkedin"), channel="chrome", headless=False,
@@ -110,9 +177,11 @@ def linkedin_signed_in(c):
             tab.on("response", lambda r: responses.append(r)
                    if "/voyager/api/" in r.url and LINKEDIN_CARDS in r.url else None)
             for query in LINKEDIN_QUERIES:
-                for page in range(LINKEDIN_PAGES):
+                for page in range(pages):
+                    if out_of_time(c):
+                        break
                     responses.clear()
-                    params = {"keywords": query, **LINKEDIN_FILTERS, **({"start": page * 25} if page else {})}
+                    params = {"keywords": query, **filters, **({"start": page * 25} if page else {})}
                     tab.goto(f"{LINKEDIN}/jobs/search/?{urlencode(params)}", wait_until="domcontentloaded",
                              timeout=60000)
                     if any(k in tab.url for k in _SIGN_IN_PAGES):
