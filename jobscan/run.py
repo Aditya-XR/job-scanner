@@ -303,9 +303,9 @@ def update_sheet(sheet, args, jobs, stats):
     id_problems = {n: (s["fallbacks"], s["conflicts"]) for n, s in stats.items() if s["fallbacks"] or s["conflicts"]}
     if not args.no_email:
         from .notify import send_summary
-        sent = send_summary(args.group, new, sheet.url, broken_now & broken_before,
-                            closed_rows=closed, id_problems=id_problems, copies=copies)
-        log.info("Summary email %s", "sent" if sent else "skipped (Gmail not configured)")
+        if send_summary(args.group, new, sheet.url, broken_now & broken_before,
+                        closed_rows=closed, id_problems=id_problems, copies=copies):
+            log.info("Summary email sent")
     log.info("Done: %d new rows in %s", len(new), sheet.url)
 
 if __name__ == "__main__":

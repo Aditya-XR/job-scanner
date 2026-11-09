@@ -111,13 +111,16 @@ def check_gmail():
     if len(pw) != 16:
         return fail("app password should be 16 letters; your normal Gmail password won't work")
     to = env("ALERT_TO") or addr
+    from jobscan.notify import smtp_login
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as s:
-            s.login(addr, pw)
+            smtp_login(s, addr, pw)
             s.sendmail(addr, [to], f"From: {addr}\r\nTo: {to}\r\nSubject: jobscan setup check\r\n\r\n"
                                    "If you can read this, Gmail alerts are working.\r\n")
     except smtplib.SMTPAuthenticationError:
         return fail("Gmail rejected the login: check the address and regenerate the app password")
+    except (smtplib.SMTPException, OSError) as e:
+        return fail(f"SMTP error ({type(e).__name__}: {e})")
     ok(f"logged in and sent a test email to {to}")
     return True
 

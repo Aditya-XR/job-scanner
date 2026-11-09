@@ -1,17 +1,29 @@
 """Daily summary + alerts through Gmail SMTP (app password)."""
 import html
+import logging
 import smtplib
 from email.mime.text import MIMEText
 
 from .core import env, today
 
 E = html.escape
+log = logging.getLogger("jobscan")
+
+
+def smtp_login(s: smtplib.SMTP, addr: str, pw: str):
+    """Authenticate with AUTH PLAIN directly. On a 535 BadCredentials, Gmail closes the
+    connection at once; smtplib.login() would then try AUTH LOGIN on the dead socket and
+    raise SMTPServerDisconnected, hiding the 535 error."""
+    s.ehlo_or_helo_if_needed()
+    s.user, s.password = addr, pw
+    s.auth("PLAIN", s.auth_plain)
 
 
 def send_summary(group: str, new_jobs, sheet_url: str, broken_sources,
                  closed_rows=(), id_problems=None, copies=0) -> bool:
     addr, pw = env("GMAIL_ADDRESS"), env("GMAIL_APP_PASSWORD").replace(" ", "")
     if not addr or not pw:
+        log.info("Summary email skipped (Gmail not configured)")
         return False
     to = env("ALERT_TO") or addr
     id_problems = id_problems or {}
@@ -54,7 +66,17 @@ def send_summary(group: str, new_jobs, sheet_url: str, broken_sources,
             f"{alert}{table}{dup}{closed}")
     msg = MIMEText(body, "html", "utf-8")
     msg["Subject"], msg["From"], msg["To"] = subject, addr, to
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
-        s.login(addr, pw)
-        s.sendmail(addr, [to], msg.as_string())
-    return True
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
+            smtp_login(s, addr, pw)
+            s.sendmail(addr, [to], msg.as_string())
+        return True
+    except smtplib.SMTPAuthenticationError as e:
+        detail = (e.smtp_error.decode("utf-8", errors="replace").splitlines()[0]
+                  if isinstance(e.smtp_error, bytes) else str(e))
+        log.warning("Summary email failed: Gmail rejected the login (%s %s) — regenerate GMAIL_APP_PASSWORD",
+                    e.smtp_code, detail)
+        return False
+    except (smtplib.SMTPException, OSError) as e:
+        log.warning("Summary email failed (%s: %s); sheet was still updated", type(e).__name__, e)
+        return False
