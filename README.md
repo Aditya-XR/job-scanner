@@ -154,6 +154,26 @@ comes second waits.
 Task Scheduler's own history (each start, skip and failure, with the reason) is off by default;
 `install_task.ps1` turns it on when run as administrator, and otherwise prints the command.
 
+#### Switching it off (before a proctored test)
+
+```powershell
+jobscan off       # stop everything now; stays off, through restarts, until you turn it on
+jobscan on
+jobscan status
+```
+
+The same three are in the Start menu (type "Job Scanner OFF") and OFF/ON are on the desktop;
+`install_task.ps1` puts them there (or `laptop\install_switch.ps1` on its own). `jobscan off`
+([`scanner_switch.ps1`](laptop/scanner_switch.ps1)) writes `state\OFF`, disables the scheduled
+task (Windows then starts nothing: no window, no hidden process), kills whatever the scanner is
+running (its Python, Playwright, the Chrome windows on its own profiles, the launcher; your own
+Chrome is left alone), then checks all three and says **OFF - verified**, or **NOT OFF** and what's
+wrong. Two locks, so one failing isn't enough: while `state\OFF` exists, `run_laptop.ps1`, every
+`python -m jobscan` and a reinstall of the task refuse too. If it stopped a scan that was writing
+to the sheet, it clears that scan's claim on the Lock tab. GitHub's daily run isn't affected (it
+never touches the laptop), but its summary email can still notify you: turn on Windows' Do not
+disturb for the test. Tests: `powershell -ExecutionPolicy Bypass -File laptop\switch_test\run_tests.ps1 -Live`.
+
 LinkedIn is read signed in as the burner account (`LINKEDIN_LI_AT`), page by page at a
 person's pace: its public search allows one connection only a page or two a day. If LinkedIn
 ever asks the account to sign in again or pass a security check, the run stops reading LinkedIn

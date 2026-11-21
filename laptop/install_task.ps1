@@ -3,6 +3,7 @@
 # the laptop, when it connects to a network, and every hour while you're logged in. Each start
 # reads only the boards that are due (jobscan/laptop.py), so most starts finish in a second.
 # It runs only while you are logged in, because Naukri needs a visible browser window.
+# `jobscan off` switches all of it off until `jobscan on` (laptop\scanner_switch.ps1).
 #
 #   powershell -ExecutionPolicy Bypass -File laptop\install_task.ps1
 #   Start-ScheduledTask "Job Scanner laptop run"        # check now
@@ -24,13 +25,21 @@ $online = New-CimInstance -ClientOnly -CimClass (Get-CimClass -Namespace $cim -C
     -Property @{Delay = "PT1M"; Subscription =                                 # event 10000: connected to a network
         "<QueryList><Query Id=`"0`" Path=`"$network`"><Select Path=`"$network`">*[System[(EventID=10000)]]</Select></Query></QueryList>"}
 
+# Switched off (jobscan off): the task is registered disabled, so reinstalling never turns it on.
+$off = Test-Path -LiteralPath (Join-Path $repo "state\OFF")
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable -MultipleInstances IgnoreNew `
-    -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+    -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2) -Disable:$off
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($logon, $unlock, $online, $hourly) `
     -Settings $settings -Principal $principal -Force `
     -Description "Job Scanner: reads LinkedIn, Naukri and Foundit into the sheet when they're due (python -m jobscan --group laptop --if-due)." |
     Select-Object TaskName, State
+if ($off) {
+    Write-Host "Job Scanner is switched OFF (state\OFF), so the task was installed disabled. Turn it on with: jobscan on"
+}
+
+# jobscan off / on / status, and the Start menu and desktop shortcuts.
+& (Join-Path $PSScriptRoot "install_switch.ps1")
 
 # Task Scheduler's history (each start, skip and failure, with the reason) is off by default, and
 # turning it on needs an administrator.

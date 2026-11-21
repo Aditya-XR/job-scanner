@@ -264,6 +264,11 @@ def main(argv=None):
     ap.add_argument("--only", help="comma-separated company names/slugs or board names, for testing")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    from . import laptop
+    off = laptop.switched_off()
+    if off:   # `jobscan off` on this laptop (state/OFF); GitHub's runs never have the file
+        raise SystemExit(f"Job Scanner is switched OFF on this laptop ({off}). Nothing was read. "
+                         "Turn it back on with: jobscan on")
 
     only = {s.strip().lower() for s in args.only.split(",")} if args.only else None
     if args.if_due:
@@ -330,6 +335,10 @@ def run_due(only=None, dry_run=False, email=True):
     updates, read = [], 0
     with laptop.keep_awake():
         for name, reader, cfg in due:
+            off = laptop.switched_off()
+            if off:   # `jobscan off` while this run was going: open no more browsers
+                log.info("\nSwitched OFF (%s): stopping before %s.", off, name)
+                break
             started = datetime.now(IST)
             days, missed = state.window_days(name, started), state.days_missed(name, started)
             log.info("\n%s: reading postings from the last %d days%s", name, days,

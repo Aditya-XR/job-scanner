@@ -240,6 +240,17 @@ class Sheet:
             if ws.acell("A1").value == me:
                 ws.update_acell("A1", "")
 
+    def release_lock_of(self, host: str) -> str:
+        """Clear the Lock tab if a run on `host` holds it, and return that claim ('' if not).
+        For `jobscan off`, which has just killed every scanner process on this laptop, so a claim
+        by this laptop can only be left over; without this, GitHub's next run would wait for it."""
+        ws = self._worksheet("Lock", hidden=True)
+        current = ws.acell("A1").value or ""
+        if current.split(" | ")[0].endswith(f" run on {host}"):
+            ws.update_acell("A1", "")
+            return current
+        return ""
+
     # ---------- reading ----------
 
     def tracker(self) -> Tracker:
