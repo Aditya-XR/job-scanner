@@ -8,6 +8,10 @@ the laptop was off are caught up (up to MAX_DAYS).
 
 The state lives in state/laptop.json (git-ignored). A board the file doesn't know yet (first
 run, or the file was deleted) starts from its last good read in the sheet's Run log.
+
+`jobscan off` (laptop/scanner_switch.ps1) switches the whole laptop part off until `jobscan on`:
+it disables the scheduled task, kills what's running and writes state/OFF, which makes every
+`python -m jobscan` on this laptop refuse to start (switched_off()).
 """
 import ctypes
 import json
@@ -24,6 +28,7 @@ import certifi
 from .core import ROOT
 
 STATE_FILE = ROOT / "state" / "laptop.json"
+OFF_FILE = ROOT / "state" / "OFF"  # written by `jobscan off`, removed by `jobscan on`
 MIN_DAYS, MAX_DAYS = 2, 7          # how far back a board is asked for postings
 RETRY_AFTER = timedelta(hours=1)
 MIN_GAP = timedelta(hours=6)       # just after midnight, last evening's read still counts as today's
@@ -131,6 +136,17 @@ class State:
         b.last_error = error
         if pause:
             b.paused_until = (now + SIGN_IN_PAUSE).isoformat()
+
+
+def switched_off() -> str:
+    """'' if the scanner may run on this laptop, otherwise why not (state/OFF's text). A state/OFF
+    that exists but can't be read still counts as off: when in doubt, nothing runs."""
+    try:
+        return OFF_FILE.read_text(encoding="utf-8-sig").strip() or "switched off"
+    except FileNotFoundError:
+        return ""
+    except (OSError, ValueError):
+        return "switched off (state/OFF couldn't be read)"
 
 
 def overdue(last_reads: dict, now, names) -> dict:

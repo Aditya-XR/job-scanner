@@ -16,6 +16,14 @@ def load(name):
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
+@pytest.fixture(autouse=True)
+def switched_on(monkeypatch, tmp_path):
+    """Tests never see this laptop's own state/OFF (`jobscan off`)."""
+    import jobscan.laptop
+    monkeypatch.setattr(jobscan.laptop, "OFF_FILE", tmp_path / "OFF")
+    return tmp_path / "OFF"
+
+
 @pytest.fixture
 def stats():
     from jobscan.run import new_stats
